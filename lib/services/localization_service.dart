@@ -38,6 +38,8 @@ class LocalizationService {
       'book_borrowing': 'Peminjaman buku',
       'reports': 'Laporan',
       'library_reports': 'Laporan perpustakaan',
+      'dashboard': 'Dashboard',
+      'feature_under_development': 'Fitur sedang dalam pengembangan',
       'role': 'Peran',
       'status': 'Status',
       'join_date': 'Tanggal Bergabung',
@@ -120,7 +122,6 @@ class LocalizationService {
       'member_deleted': 'Anggota berhasil dihapus',
       'loan_added': 'Peminjaman berhasil ditambahkan',
       'book_returned': 'Buku berhasil dikembalikan',
-      'feature_under_development': 'Fitur sedang dalam pengembangan',
       'language_changed': 'Bahasa berhasil diubah',
     },
     'en': {
@@ -161,6 +162,8 @@ class LocalizationService {
       'book_borrowing': 'Book borrowing',
       'reports': 'Reports',
       'library_reports': 'Library reports',
+      'dashboard': 'Dashboard',
+      'feature_under_development': 'Feature under development',
       'role': 'Role',
       'status': 'Status',
       'join_date': 'Join Date',
@@ -243,7 +246,6 @@ class LocalizationService {
       'member_deleted': 'Member deleted successfully',
       'loan_added': 'Loan added successfully',
       'book_returned': 'Book returned successfully',
-      'feature_under_development': 'Feature under development',
       'language_changed': 'Language changed successfully',
     },
   };

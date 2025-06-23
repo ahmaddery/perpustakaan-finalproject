@@ -147,8 +147,12 @@ class LoanQueries {
     DateTime dueDate = DateTime.parse(loan['due_date']);
     double calculatedFine = 0.0;
     
-    if (now.isAfter(dueDate)) {
-      int overdueDays = now.difference(dueDate).inDays;
+    // Compare dates only (without time)
+    final today = DateTime(now.year, now.month, now.day);
+    final dueDateOnly = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    
+    if (today.isAfter(dueDateOnly)) {
+      int overdueDays = today.difference(dueDateOnly).inDays;
       if (overdueDays > 0) {
         calculatedFine = overdueDays * 5000.0; // Rp 5,000 per hari keterlambatan
       }
@@ -261,10 +265,14 @@ class LoanQueries {
     DateTime now = DateTime.now().add(Duration(hours: 7)); // WIB timezone
     DateTime dueDate = DateTime.parse(dueDateStr);
     
-    if (now.isAfter(dueDate)) {
-      int overdueDays = now.difference(dueDate).inDays;
+    // Compare dates only (without time)
+    final today = DateTime(now.year, now.month, now.day);
+    final dueDateOnly = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    
+    if (today.isAfter(dueDateOnly)) {
+      int overdueDays = today.difference(dueDateOnly).inDays;
       if (overdueDays > 0) {
-        return overdueDays * 5000.0; // Rp 5,000 per day
+        return overdueDays * 5000.0; // Rp 5,000 per hari keterlambatan
       }
     }
     

@@ -462,7 +462,7 @@ class NotificationCard extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  if (notification.overdueDays != null) ..[
+                  if (notification.overdueDays != null) ...[
                     const SizedBox(height: 12),
                     Row(
                       children: [

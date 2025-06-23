@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../database/database_helper.dart';
 import '../services/session_manager.dart';
-import 'home_screen.dart';
+import 'main_navigation_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -58,7 +58,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           
           if (mounted) {
             Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const HomeScreen()),
+              MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
             );
           }
         }

@@ -95,11 +95,17 @@ class Loan {
 
   bool get isOverdue {
     if (returnDate != null) return false;
-    return DateTime.now().isAfter(dueDate);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dueDateOnly = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    return today.isAfter(dueDateOnly);
   }
 
   int get daysOverdue {
     if (!isOverdue) return 0;
-    return DateTime.now().difference(dueDate).inDays;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dueDateOnly = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    return today.difference(dueDateOnly).inDays;
   }
 }

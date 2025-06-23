@@ -5,7 +5,7 @@ import '../services/settings_service.dart';
 import '../services/localization_service.dart';
 import '../services/notification_service.dart';
 import 'register_screen.dart';
-import 'home_screen.dart';
+import 'main_navigation_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -60,11 +60,11 @@ class _LoginScreenState extends State<LoginScreen> {
         await SessionManager.saveUserSession(user);
         
         // Initialize notification service after successful login
-        NotificationService().startNotificationService();
+        await NotificationService().startNotificationService();
         
         if (mounted) {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
           );
         }
       } else {

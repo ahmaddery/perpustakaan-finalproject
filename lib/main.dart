@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'services/session_manager.dart';
 import 'services/notification_service.dart';
 import 'screens/login_screen.dart';
-import 'screens/home_screen.dart';
+import 'screens/main_navigation_screen.dart';
+
+// Global navigator key for accessing context from anywhere
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() {
   runApp(const MyApp());
@@ -14,6 +17,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Sistem Perpustakaan',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
@@ -50,11 +54,11 @@ class _SplashScreenState extends State<SplashScreen> {
       if (mounted) {
         if (isLoggedIn) {
           // Initialize notification service when user is logged in
-          NotificationService().startNotificationService();
+          await NotificationService().startNotificationService();
           
-          // User sudah login, arahkan ke home
+          // User sudah login, arahkan ke main navigation dengan bottom navbar
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
           );
         } else {
           // User belum login, arahkan ke login

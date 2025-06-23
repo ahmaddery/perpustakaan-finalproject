@@ -1,5 +1,9 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../database/database_helper.dart';
+import '../screens/loan_detail_screen.dart';
+import '../main.dart';
 import 'localization_service.dart';
 
 class NotificationService {
@@ -10,9 +14,72 @@ class NotificationService {
   final DatabaseHelper _dbHelper = DatabaseHelper();
   Timer? _notificationTimer;
   List<Function(NotificationData)> _listeners = [];
+  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  bool _isInitialized = false;
+
+  // Initialize push notifications
+  Future<void> _initializeNotifications() async {
+    if (_isInitialized) return;
+    
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    
+    const DarwinInitializationSettings initializationSettingsIOS =
+        DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+    
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsIOS,
+    );
+    
+    await _flutterLocalNotificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: _onNotificationTapped,
+    );
+    
+    // Request permissions for Android 13+
+    await _flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
+    
+    _isInitialized = true;
+  }
+  
+  // Handle notification tap
+  void _onNotificationTapped(NotificationResponse notificationResponse) {
+    // Handle notification tap - navigate to loan detail screen
+    final payload = notificationResponse.payload;
+    if (payload != null && payload.isNotEmpty) {
+      final parts = payload.split(':');
+      if (parts.length == 2) {
+        final notificationType = parts[0];
+        final loanId = int.tryParse(parts[1]);
+        
+        if (loanId != null) {
+          // Get the current context from the navigator
+          final context = navigatorKey.currentContext;
+          if (context != null) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => LoanDetailScreen(loanId: loanId),
+              ),
+            );
+          }
+        }
+      }
+    }
+    print('Notification tapped: $payload');
+  }
 
   // Start notification service
-  void startNotificationService() {
+  Future<void> startNotificationService() async {
+    await _initializeNotifications();
+    
     // Check for notifications every hour
     _notificationTimer = Timer.periodic(const Duration(hours: 1), (timer) {
       _checkNotifications();
@@ -76,7 +143,7 @@ class NotificationService {
             priority: daysUntilDue == 1 ? NotificationPriority.high : NotificationPriority.medium,
           );
           
-          _notifyListeners(notification);
+          await _notifyListeners(notification);
         }
       }
     }
@@ -106,7 +173,7 @@ class NotificationService {
           priority: overdueDays > 7 ? NotificationPriority.high : NotificationPriority.medium,
         );
         
-        _notifyListeners(notification);
+        await _notifyListeners(notification);
       }
     }
   }
@@ -178,8 +245,48 @@ class NotificationService {
     return notifications;
   }
 
-  // Notify all listeners
-  void _notifyListeners(NotificationData notification) {
+  // Send push notification
+  Future<void> _sendPushNotification(NotificationData notification) async {
+    if (!_isInitialized) return;
+    
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+      'perpustakaan_channel',
+      'Perpustakaan Notifications',
+      channelDescription: 'Notifikasi untuk sistem perpustakaan',
+      importance: Importance.high,
+      priority: Priority.high,
+      showWhen: true,
+      icon: '@mipmap/ic_launcher',
+    );
+    
+    const DarwinNotificationDetails iOSPlatformChannelSpecifics =
+        DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+      iOS: iOSPlatformChannelSpecifics,
+    );
+    
+    await _flutterLocalNotificationsPlugin.show(
+      notification.loanId, // Use loan ID as notification ID
+      notification.title,
+      notification.message,
+      platformChannelSpecifics,
+      payload: '${notification.type.name}:${notification.loanId}',
+    );
+  }
+
+  // Notify all listeners and send push notification
+  Future<void> _notifyListeners(NotificationData notification) async {
+    // Send push notification to device
+    await _sendPushNotification(notification);
+    
+    // Notify in-app listeners
     for (final listener in _listeners) {
       try {
         listener(notification);
