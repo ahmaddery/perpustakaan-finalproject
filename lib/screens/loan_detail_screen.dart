@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../database/database_helper.dart';
 import '../models/loan_model.dart';
+import '../models/payment_model.dart';
 import '../services/localization_service.dart';
 import '../services/settings_service.dart';
+import '../services/payment_service.dart';
 
 class LoanDetailScreen extends StatefulWidget {
   final int loanId;
@@ -78,19 +81,253 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
     if (_loan == null) return;
     
     try {
-      final fineAmount = _loan!.isOverdue ? _loan!.daysOverdue * 1.0 : 0.0;
+      final fineAmount = _loan!.isOverdue ? _loan!.daysOverdue * 1000.0 : 0.0; // Rp 1000 per hari
       
-      await _dbHelper.returnBook(_loan!.loanId!, fineAmount: fineAmount);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Buku berhasil dikembalikan')),
-      );
-      
-      // Reload loan details
-      await _loadLoanDetails();
+      if (fineAmount > 0) {
+        // Show payment dialog if there's a fine
+        _showPaymentDialog(fineAmount);
+      } else {
+        // Return book directly if no fine
+        await _dbHelper.returnBook(_loan!.loanId!, fineAmount: 0.0);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Buku berhasil dikembalikan')),
+        );
+        
+        // Reload loan details
+        await _loadLoanDetails();
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error returning book: $e')),
+      );
+    }
+  }
+
+  void _showPaymentDialog(double fineAmount) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Pembayaran Denda'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Buku ini terlambat ${_loan!.daysOverdue} hari.'),
+            const SizedBox(height: 8),
+            Text(
+              'Total denda: ${_formatCurrency(fineAmount)}',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: Colors.red,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text('Silakan lakukan pembayaran untuk melanjutkan pengembalian buku.'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _processPayment(fineAmount);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Bayar Sekarang'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _processPayment(double fineAmount) async {
+    try {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Membuat pembayaran...'),
+            ],
+          ),
+        ),
+      );
+
+      // Create payment via Xendit API
+      final paymentResponse = await PaymentService.createPayment(
+        userId: 1, // You should get this from session/auth
+        amount: fineAmount,
+        payerEmail: _member?['email'] ?? 'user@example.com',
+        description: 'Pembayaran denda keterlambatan buku: ${_book?['title']}',
+        loanId: _loan!.loanId,
+        bookId: _loan!.bookId,
+      );
+
+      Navigator.of(context).pop(); // Close loading dialog
+
+      if (paymentResponse['success'] == true) {
+        final paymentData = paymentResponse['data'];
+        final invoiceUrl = paymentData['invoice_url'];
+        
+        if (invoiceUrl != null) {
+          // Show payment success dialog with invoice URL
+          _showPaymentUrlDialog(invoiceUrl, paymentData['id']);
+        } else {
+          throw Exception('Invoice URL tidak tersedia');
+        }
+      } else {
+        throw Exception(paymentResponse['message'] ?? 'Gagal membuat pembayaran');
+      }
+    } catch (e) {
+      Navigator.of(context).pop(); // Close loading dialog if still open
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error creating payment: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _showPaymentUrlDialog(String invoiceUrl, int paymentId) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Pembayaran Dibuat'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.payment,
+              size: 64,
+              color: Colors.blue,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Pembayaran berhasil dibuat. Silakan lakukan pembayaran melalui link berikut:',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Text(
+                invoiceUrl,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.blue,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _checkPaymentStatus(paymentId);
+            },
+            child: const Text('Cek Status Pembayaran'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (await canLaunchUrl(Uri.parse(invoiceUrl))) {
+                await launchUrl(
+                  Uri.parse(invoiceUrl),
+                  mode: LaunchMode.externalApplication,
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Buka Link Pembayaran'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _checkPaymentStatus(int paymentId) async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Mengecek status pembayaran...'),
+            ],
+          ),
+        ),
+      );
+
+      final paymentResponse = await PaymentService.getPaymentDetails(paymentId);
+      Navigator.of(context).pop(); // Close loading dialog
+
+      if (paymentResponse['success'] == true) {
+        final paymentData = paymentResponse['data'];
+        final status = paymentData['status'];
+        
+        if (status == 'paid') {
+          // Payment completed, return the book
+          await _dbHelper.returnBook(_loan!.loanId!, fineAmount: paymentData['amount']);
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Pembayaran berhasil! Buku telah dikembalikan.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          
+          await _loadLoanDetails();
+        } else if (status == 'pending') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Pembayaran masih pending. Silakan coba lagi nanti.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Status pembayaran: $status'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      Navigator.of(context).pop(); // Close loading dialog if still open
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error checking payment status: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }

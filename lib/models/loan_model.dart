@@ -12,6 +12,7 @@ class Loan {
   
   // Additional fields for display purposes
   final String? memberName;
+  final String? memberEmail;
   final String? bookTitle;
 
   Loan({
@@ -26,6 +27,7 @@ class Loan {
     required this.createdAt,
     required this.updatedAt,
     this.memberName,
+    this.memberEmail,
     this.bookTitle,
   });
 
@@ -44,6 +46,7 @@ class Loan {
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
       memberName: json['member_name'],
+      memberEmail: json['member_email'],
       bookTitle: json['book_title'],
     );
   }
@@ -75,6 +78,7 @@ class Loan {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? memberName,
+    String? memberEmail,
     String? bookTitle,
   }) {
     return Loan(
@@ -89,6 +93,7 @@ class Loan {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       memberName: memberName ?? this.memberName,
+      memberEmail: memberEmail ?? this.memberEmail,
       bookTitle: bookTitle ?? this.bookTitle,
     );
   }

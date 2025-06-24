@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../database/database_helper.dart';
 import '../models/loan_model.dart';
 import '../models/member_model.dart';
 import '../models/book_model.dart';
+import '../models/payment_model.dart';
 import '../services/book_service.dart';
 import '../services/localization_service.dart';
 import '../services/settings_service.dart';
+import '../services/payment_service.dart';
 
 class LoansScreen extends StatefulWidget {
   const LoansScreen({Key? key}) : super(key: key);
@@ -148,11 +151,17 @@ class _LoansScreenState extends State<LoansScreen>
         loan: loan,
         onReturn: (fineAmount) async {
           try {
-            await _dbHelper.returnBook(loan.loanId!, fineAmount: fineAmount);
-            _loadLoans();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Book returned successfully')),
-            );
+            if (fineAmount != null && fineAmount > 0) {
+              // Process payment for fine
+              await _processPaymentForFine(loan, fineAmount);
+            } else {
+              // Return book directly if no fine
+              await _dbHelper.returnBook(loan.loanId!, fineAmount: 0.0);
+              _loadLoans();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Book returned successfully')),
+              );
+            }
           } catch (e) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Error returning book: $e')),
@@ -161,6 +170,343 @@ class _LoansScreenState extends State<LoansScreen>
         },
       ),
     );
+  }
+
+  Future<void> _processPaymentForFine(Loan loan, double fineAmount) async {
+    try {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Membuat pembayaran...'),
+            ],
+          ),
+        ),
+      );
+
+      // Create payment via Xendit API
+      final paymentResponse = await PaymentService.createPayment(
+        userId: 1, // You should get this from session/auth
+        amount: fineAmount * 1000, // Convert to Rupiah (assuming $1 = Rp 1000)
+        payerEmail: loan.memberEmail ?? 'member@example.com',
+        description: 'Pembayaran denda keterlambatan buku: ${loan.bookTitle}',
+        loanId: loan.loanId,
+        bookId: loan.bookId,
+      );
+
+      Navigator.of(context).pop(); // Close loading dialog
+
+      if (paymentResponse['success'] == true) {
+        final paymentData = paymentResponse['data'];
+        final invoiceUrl = paymentData['invoice_url'];
+        
+        if (invoiceUrl != null) {
+          // Show payment success dialog with invoice URL
+          _showPaymentUrlDialog(invoiceUrl, paymentData['id'], loan, fineAmount);
+        } else {
+          throw Exception('Invoice URL tidak tersedia');
+        }
+      } else {
+        throw Exception(paymentResponse['message'] ?? 'Gagal membuat pembayaran');
+      }
+    } catch (e) {
+      Navigator.of(context).pop(); // Close loading dialog if still open
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error creating payment: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _showPaymentUrlDialog(String invoiceUrl, int paymentId, Loan loan, double fineAmount) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Pembayaran Denda'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.payment,
+              size: 64,
+              color: Colors.blue,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Denda untuk buku: ${loan.bookTitle}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Jumlah: ${_formatCurrency(fineAmount * 1000)}',
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Silakan lakukan pembayaran melalui link berikut:',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Text(
+                invoiceUrl,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.blue,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('Tutup'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _checkPaymentStatus(paymentId, loan, fineAmount);
+            },
+            child: const Text('Cek Status Pembayaran'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (await canLaunchUrl(Uri.parse(invoiceUrl))) {
+                await launchUrl(
+                  Uri.parse(invoiceUrl),
+                  mode: LaunchMode.externalApplication,
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Buka Link Pembayaran'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _checkPaymentStatus(int paymentId, Loan loan, double fineAmount) async {
+    bool isDialogOpen = true;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            const Text('Mengecek status pembayaran...'),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () {
+                isDialogOpen = false;
+                Navigator.of(context).pop();
+              },
+              child: const Text('Batal'),
+            ),
+          ],
+        ),
+      ),
+    ).then((_) {
+      isDialogOpen = false;
+    });
+
+    try {
+      // Poll payment status every 3 seconds until paid or cancelled
+      while (isDialogOpen) {
+        final paymentResponse = await PaymentService.getPaymentDetails(paymentId);
+        
+        if (paymentResponse['success'] == true) {
+          final paymentData = paymentResponse['data'];
+          final status = paymentData['status'];
+          
+          if (status == 'paid') {
+            // Payment completed, close dialog and return the book
+            if (isDialogOpen) {
+              isDialogOpen = false;
+              Navigator.of(context).pop(); // Close loading dialog
+            }
+            
+            // Show success popup
+            await showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.green, size: 28),
+                    SizedBox(width: 8),
+                    Text('Pembayaran Berhasil!'),
+                  ],
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Pembayaran denda untuk buku "${loan.bookTitle}" telah berhasil diproses.'),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey[300]!),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.payment, size: 16, color: Colors.blue),
+                              const SizedBox(width: 6),
+                              const Text('Detail Pembayaran:', style: TextStyle(fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text('Jumlah Dibayar: ${_formatCurrency(double.tryParse(paymentData['paid_amount']?.toString() ?? '0') ?? fineAmount * 1000)}'),
+                          const SizedBox(height: 4),
+                          Text('Metode Pembayaran: ${paymentData['payment_channel'] ?? 'Online Payment'}'),
+                          const SizedBox(height: 4),
+                          Text('ID Transaksi: ${paymentData['external_id'] ?? paymentData['id']}'),
+                          const SizedBox(height: 4),
+                          Text('Mata Uang: ${paymentData['currency'] ?? 'IDR'}'),
+                          if (paymentData['paid_at'] != null) ...[
+                            const SizedBox(height: 4),
+                            Text('Waktu Pembayaran: ${_formatDateTime(paymentData['paid_at'])}'),
+                          ],
+                          if (paymentData['payment_destination'] != null) ...[
+                            const SizedBox(height: 4),
+                            Text('Tujuan Pembayaran: ${paymentData['payment_destination']}'),
+                          ],
+                          if (paymentData['bank_code'] != null) ...[
+                            const SizedBox(height: 4),
+                            Text('Kode Bank: ${paymentData['bank_code']}'),
+                          ],
+                          if (paymentData['payment_progress'] != null) ...[
+                            const SizedBox(height: 4),
+                            Text('Progress: ${paymentData['payment_progress']}%'),
+                          ],
+                          if (paymentData['description'] != null) ...[
+                            const SizedBox(height: 4),
+                            Text('Deskripsi: ${paymentData['description']}', 
+                                style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        const Icon(Icons.check_circle_outline, size: 16, color: Colors.green),
+                        const SizedBox(width: 6),
+                        const Expanded(
+                          child: Text('Buku telah dikembalikan ke perpustakaan.',
+                              style: TextStyle(color: Colors.green, fontWeight: FontWeight.w500)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+            
+            await _dbHelper.returnBook(loan.loanId!, fineAmount: fineAmount);
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Pembayaran berhasil! Buku telah dikembalikan.'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            
+            _loadLoans();
+            return;
+          } else if (status == 'expired' || status == 'failed') {
+            // Payment failed or expired
+            if (isDialogOpen) {
+              isDialogOpen = false;
+              Navigator.of(context).pop(); // Close loading dialog
+            }
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Pembayaran $status. Silakan coba lagi.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
+          }
+          // If status is still 'pending', continue polling
+        }
+        
+        // Wait 3 seconds before next check
+        await Future.delayed(const Duration(seconds: 3));
+      }
+    } catch (e) {
+      if (isDialogOpen) {
+        isDialogOpen = false;
+        Navigator.of(context).pop(); // Close loading dialog
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error checking payment status: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  String _formatCurrency(double amount) {
+    return 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]}.',
+    )}';
+  }
+
+  String _formatDateTime(String? dateTimeStr) {
+    if (dateTimeStr == null) return 'N/A';
+    try {
+      final dateTime = DateTime.parse(dateTimeStr);
+      return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return dateTimeStr;
+    }
   }
 
   Widget _buildLoansList(List<Loan> loans) {
@@ -199,7 +545,7 @@ class _LoansScreenState extends State<LoansScreen>
                   Text('Returned: ${_formatDate(loan.returnDate!)}'),
                 if (loan.fineAmount > 0)
                   Text(
-                    'Fine: \$${loan.fineAmount.toStringAsFixed(2)}',
+                    'Denda: ${_formatCurrency(loan.fineAmount * 1000)}', // Convert to Rupiah
                     style: const TextStyle(color: Colors.red),
                   ),
                 Text(
@@ -582,7 +928,7 @@ class _EnhancedAddLoanDialogState extends State<EnhancedAddLoanDialog> {
                           final date = await showDatePicker(
                             context: context,
                             initialDate: _dueDate,
-                            firstDate: DateTime.now(),
+                            firstDate: DateTime(2020), // Allow past dates for development
                             lastDate: DateTime.now().add(const Duration(days: 365)),
                           );
                           if (date != null) {
@@ -637,6 +983,7 @@ class ReturnBookDialog extends StatefulWidget {
 class _ReturnBookDialogState extends State<ReturnBookDialog> {
   final TextEditingController _fineController = TextEditingController();
   double _calculatedFine = 0.0;
+  bool _isManualInput = false;
 
   @override
   void initState() {
@@ -646,10 +993,23 @@ class _ReturnBookDialogState extends State<ReturnBookDialog> {
 
   void _calculateFine() {
     if (widget.loan.isOverdue) {
-      // Calculate fine: $1 per day overdue
-      _calculatedFine = widget.loan.daysOverdue * 1.0;
-      _fineController.text = _calculatedFine.toStringAsFixed(2);
+      // Calculate fine: Rp 1000 per day overdue
+      _calculatedFine = widget.loan.daysOverdue * 1000.0; // Direct Rupiah calculation
+      _fineController.text = _formatRupiah(_calculatedFine);
     }
+  }
+
+  String _formatRupiah(double amount) {
+    return 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]}.',
+    )}';
+  }
+
+  double _parseRupiah(String text) {
+    // Remove 'Rp' and dots, then parse
+    String cleanText = text.replaceAll('Rp', '').replaceAll('.', '').trim();
+    return double.tryParse(cleanText) ?? 0.0;
   }
 
   @override
@@ -680,13 +1040,71 @@ class _ReturnBookDialogState extends State<ReturnBookDialog> {
                 ),
               ),
               const SizedBox(height: 8),
+              Row(
+                children: [
+                  Checkbox(
+                    value: _isManualInput,
+                    onChanged: (value) {
+                      setState(() {
+                        _isManualInput = value ?? false;
+                        if (!_isManualInput) {
+                          _calculateFine(); // Reset to calculated fine
+                        }
+                      });
+                    },
+                  ),
+                  const Text('Input manual'),
+                ],
+              ),
+              const SizedBox(height: 8),
               TextField(
                 controller: _fineController,
                 decoration: const InputDecoration(
-                  labelText: 'Fine Amount (\$)',
+                  labelText: 'Jumlah Denda',
                   border: OutlineInputBorder(),
+                  helperText: 'Pembayaran akan diproses melalui Xendit',
+                  prefixText: 'Rp ',
                 ),
                 keyboardType: TextInputType.number,
+                readOnly: !_isManualInput,
+                onChanged: (value) {
+                  if (_isManualInput) {
+                    // Format input as user types
+                    String cleanValue = value.replaceAll(RegExp(r'[^0-9]'), '');
+                    if (cleanValue.isNotEmpty) {
+                      double amount = double.parse(cleanValue);
+                      String formatted = _formatRupiah(amount);
+                      _fineController.value = TextEditingValue(
+                        text: formatted,
+                        selection: TextSelection.collapsed(offset: formatted.length),
+                      );
+                    }
+                  }
+                },
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info, color: Colors.blue[600], size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Pembayaran denda akan menggunakan sistem Xendit untuk keamanan transaksi.',
+                        style: TextStyle(
+                          color: Colors.blue[700],
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
         ],
@@ -700,7 +1118,11 @@ class _ReturnBookDialogState extends State<ReturnBookDialog> {
           onPressed: () {
             double? fineAmount;
             if (_fineController.text.isNotEmpty) {
-              fineAmount = double.tryParse(_fineController.text);
+              if (_isManualInput) {
+                fineAmount = _parseRupiah(_fineController.text) / 1000; // Convert back to USD for payment processing
+              } else {
+                fineAmount = _calculatedFine / 1000; // Convert back to USD for payment processing
+              }
             }
             widget.onReturn(fineAmount);
             Navigator.pop(context);
