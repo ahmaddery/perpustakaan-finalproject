@@ -141,12 +141,27 @@ class _BooksScreenState extends State<BooksScreen> {
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text(
-          'Koleksi Buku online',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          'Koleksi Buku Online',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
         ),
-        backgroundColor: Colors.blue[600],
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF667eea),
+                Color(0xFF764ba2),
+              ],
+            ),
+          ),
+        ),
+        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.sort),
@@ -164,45 +179,132 @@ class _BooksScreenState extends State<BooksScreen> {
         children: [
           // Search Bar
           Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.blue[600],
-            child: TextField(
-              controller: _searchController,
-              onChanged: _searchBooks,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Cari buku atau penerbit...',
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-                prefixIcon: const Icon(Icons.search, color: Colors.white),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, color: Colors.white),
-                        onPressed: () {
-                          _searchController.clear();
-                          _searchBooks('');
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.2),
+            padding: const EdgeInsets.all(20.0),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF667eea),
+                  Color(0xFF764ba2),
+                ],
               ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
+              ),
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 10),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: _searchBooks,
+                    decoration: InputDecoration(
+                      labelText: 'Cari buku atau penerbit...',
+                      labelStyle: TextStyle(color: Colors.grey[600]),
+                      prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: Icon(Icons.clear, color: Colors.grey[600]),
+                              onPressed: () {
+                                _searchController.clear();
+                                _searchBooks('');
+                              },
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 15),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Total Buku: ${filteredBooks.length}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.library_books,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Koleksi',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
           
           // Content
           Expanded(
             child: isLoading
-                ? const Center(
+                ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 16),
-                        Text('Memuat data buku...'),
+                        CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Color(0xFF667eea),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Memuat data buku...',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 16,
+                          ),
+                        ),
                       ],
                     ),
                   )
@@ -248,8 +350,8 @@ class _BooksScreenState extends State<BooksScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
-                                  Icons.search_off,
-                                  size: 64,
+                                  Icons.library_books_outlined,
+                                  size: 80,
                                   color: Colors.grey[400],
                                 ),
                                 const SizedBox(height: 16),
@@ -257,7 +359,16 @@ class _BooksScreenState extends State<BooksScreen> {
                                   'Tidak ada buku ditemukan',
                                   style: TextStyle(
                                     fontSize: 18,
+                                    fontWeight: FontWeight.w500,
                                     color: Colors.grey[600],
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Coba sesuaikan pencarian Anda',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[500],
                                   ),
                                 ),
                               ],
@@ -270,101 +381,197 @@ class _BooksScreenState extends State<BooksScreen> {
                               itemCount: filteredBooks.length,
                               itemBuilder: (context, index) {
                                 final book = filteredBooks[index];
-                                return Card(
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  elevation: 2,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: InkWell(
-                                    borderRadius: BorderRadius.circular(12),
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => BookDetailScreen(book: book),
+                                return AnimatedContainer(
+                                  duration: Duration(milliseconds: 300 + (index * 50)),
+                                  curve: Curves.easeOutBack,
+                                  margin: const EdgeInsets.only(bottom: 16),
+                                  child: Card(
+                                    elevation: 8,
+                                    shadowColor: Colors.black.withOpacity(0.1),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(20),
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            Colors.white,
+                                            Colors.grey[50]!,
+                                          ],
                                         ),
-                                      );
-                                    },
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(16),
-                                      child: Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          // Book Icon
-                                          Container(
-                                            width: 60,
-                                            height: 80,
-                                            decoration: BoxDecoration(
-                                              color: Colors.blue[100],
-                                              borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(20),
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => BookDetailScreen(book: book),
                                             ),
-                                            child: Icon(
-                                              Icons.menu_book,
-                                              size: 32,
-                                              color: Colors.blue[600],
-                                            ),
-                                          ),
-                                          const SizedBox(width: 16),
-                                          
-                                          // Book Info
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  book.title,
-                                                  style: const TextStyle(
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.bold,
+                                          );
+                                        },
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(16),
+                                          child: Row(
+                                            children: [
+                                              // Book Icon
+                                              Container(
+                                                width: 60,
+                                                height: 80,
+                                                decoration: BoxDecoration(
+                                                  gradient: const LinearGradient(
+                                                    begin: Alignment.topLeft,
+                                                    end: Alignment.bottomRight,
+                                                    colors: [
+                                                      Color(0xFF667eea),
+                                                      Color(0xFF764ba2),
+                                                    ],
                                                   ),
-                                                  maxLines: 2,
-                                                  overflow: TextOverflow.ellipsis,
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Color(0xFF667eea).withOpacity(0.3),
+                                                      blurRadius: 8,
+                                                      offset: const Offset(0, 4),
+                                                    ),
+                                                  ],
                                                 ),
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  'Tahun: ${book.year}',
-                                                  style: TextStyle(
-                                                    color: Colors.grey[600],
-                                                    fontSize: 14,
-                                                  ),
-                                                ),
-                                                Text(
-                                                  'Penerbit: ${book.publisher}',
-                                                  style: TextStyle(
-                                                    color: Colors.grey[600],
-                                                    fontSize: 14,
-                                                  ),
-                                                ),
-                                                Text(
-                                                  'Halaman: ${book.pages}',
-                                                  style: TextStyle(
-                                                    color: Colors.grey[600],
-                                                    fontSize: 14,
-                                                  ),
-                                                ),
-                                                if (book.villains.isNotEmpty) ...[
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    'Penjahat: ${book.villains.length}',
-                                                    style: TextStyle(
-                                                      color: Colors.red[600],
-                                                      fontSize: 12,
-                                                      fontWeight: FontWeight.w500,
+                                                child: Center(
+                                                  child: Text(
+                                                    book.title[0].toUpperCase(),
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 24,
+                                                      fontWeight: FontWeight.bold,
                                                     ),
                                                   ),
-                                                ],
-                                              ],
-                                            ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 16),
+                                              
+                                              // Book Info
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      book.title,
+                                                      style: const TextStyle(
+                                                        fontSize: 18,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: Color(0xFF2D3748),
+                                                      ),
+                                                      maxLines: 2,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons.calendar_today,
+                                                          size: 16,
+                                                          color: Colors.grey[600],
+                                                        ),
+                                                        const SizedBox(width: 4),
+                                                        Text(
+                                                          'Tahun: ${book.year}',
+                                                          style: TextStyle(
+                                                            fontSize: 14,
+                                                            color: Colors.grey[600],
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons.business,
+                                                          size: 16,
+                                                          color: Colors.grey[600],
+                                                        ),
+                                                        const SizedBox(width: 4),
+                                                        Expanded(
+                                                          child: Text(
+                                                            'Penerbit: ${book.publisher}',
+                                                            style: TextStyle(
+                                                              fontSize: 14,
+                                                              color: Colors.grey[600],
+                                                            ),
+                                                            maxLines: 1,
+                                                            overflow: TextOverflow.ellipsis,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons.description,
+                                                          size: 16,
+                                                          color: Colors.grey[600],
+                                                        ),
+                                                        const SizedBox(width: 4),
+                                                        Text(
+                                                          'Halaman: ${book.pages}',
+                                                          style: TextStyle(
+                                                            fontSize: 14,
+                                                            color: Colors.grey[600],
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    if (book.villains.isNotEmpty) ...[
+                                                      const SizedBox(height: 8),
+                                                      Container(
+                                                        padding: const EdgeInsets.symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 6,
+                                                        ),
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.red.withOpacity(0.1),
+                                                          borderRadius: BorderRadius.circular(20),
+                                                          border: Border.all(
+                                                            color: Colors.red,
+                                                            width: 1,
+                                                          ),
+                                                        ),
+                                                        child: Row(
+                                                          mainAxisSize: MainAxisSize.min,
+                                                          children: [
+                                                            Icon(
+                                                              Icons.person_outline,
+                                                              size: 16,
+                                                              color: Colors.red,
+                                                            ),
+                                                            const SizedBox(width: 4),
+                                                            Text(
+                                                              'Penjahat: ${book.villains.length}',
+                                                              style: TextStyle(
+                                                                fontSize: 12,
+                                                                fontWeight: FontWeight.w500,
+                                                                color: Colors.red,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ],
+                                                ),
+                                              ),
+                                              
+                                              // Arrow Icon
+                                              Icon(
+                                                Icons.arrow_forward_ios,
+                                                size: 16,
+                                                color: Colors.grey[400],
+                                              ),
+                                            ],
                                           ),
-                                          
-                                          // Arrow Icon
-                                          Icon(
-                                            Icons.arrow_forward_ios,
-                                            size: 16,
-                                            color: Colors.grey[400],
-                                          ),
-                                        ],
+                                        ),
                                       ),
                                     ),
                                   ),

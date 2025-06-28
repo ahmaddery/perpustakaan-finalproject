@@ -24,11 +24,26 @@ class BookDetailScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           book.title,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
         ),
-        backgroundColor: Colors.blue[600],
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF667eea),
+                Color(0xFF764ba2),
+              ],
+            ),
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -37,11 +52,14 @@ class BookDetailScreen extends StatelessWidget {
             // Header Section
             Container(
               width: double.infinity,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.blue[600]!, Colors.blue[400]!],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF667eea),
+                    Color(0xFF764ba2),
+                  ],
                 ),
               ),
               child: Padding(
@@ -63,10 +81,37 @@ class BookDetailScreen extends StatelessWidget {
                       ),
                       child: Column(
                         children: [
-                          Icon(
-                            Icons.book,
-                            size: 48,
-                            color: Colors.blue[600],
+                          Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Color(0xFF667eea),
+                                  Color(0xFF764ba2),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF667eea).withOpacity(0.3),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Text(
+                                book.title[0].toUpperCase(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 12),
                           Text(
@@ -80,18 +125,33 @@ class BookDetailScreen extends StatelessWidget {
                           const SizedBox(height: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
+                              horizontal: 16,
+                              vertical: 8,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.blue[100],
-                              borderRadius: BorderRadius.circular(20),
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Color(0xFF667eea),
+                                  Color(0xFF764ba2),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(25),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF667eea).withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
                             child: Text(
                               'Tahun ${book.year}',
-                              style: TextStyle(
-                                color: Colors.blue[800],
-                                fontWeight: FontWeight.w600,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
                               ),
                             ),
                           ),
@@ -111,9 +171,10 @@ class BookDetailScreen extends StatelessWidget {
                 children: [
                   // Basic Information Card
                   Card(
-                    elevation: 2,
+                    elevation: 8,
+                    shadowColor: Colors.black.withOpacity(0.1),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -122,13 +183,14 @@ class BookDetailScreen extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.info_outline, color: Colors.blue[600]),
+                              Icon(Icons.info_outline, color: const Color(0xFF667eea)),
                               const SizedBox(width: 8),
                               const Text(
                                 'Informasi Buku',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
+                                  color: Color(0xFF2D3748),
                                 ),
                               ),
                             ],
@@ -150,9 +212,10 @@ class BookDetailScreen extends StatelessWidget {
                   // Notes Card
                   if (book.notes.isNotEmpty) ...[
                     Card(
-                      elevation: 2,
+                      elevation: 8,
+                      shadowColor: Colors.black.withOpacity(0.1),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
@@ -168,6 +231,7 @@ class BookDetailScreen extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
+                                    color: Color(0xFF2D3748),
                                   ),
                                 ),
                               ],
@@ -210,9 +274,10 @@ class BookDetailScreen extends StatelessWidget {
                   // Villains Card
                   if (book.villains.isNotEmpty) ...[
                     Card(
-                      elevation: 2,
+                      elevation: 8,
+                      shadowColor: Colors.black.withOpacity(0.1),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
@@ -228,6 +293,7 @@ class BookDetailScreen extends StatelessWidget {
                                   style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
+                                    color: Color(0xFF2D3748),
                                   ),
                                 ),
                               ],
@@ -235,12 +301,19 @@ class BookDetailScreen extends StatelessWidget {
                             const SizedBox(height: 12),
                             
                             ...book.villains.map((villain) => Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.all(12),
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 color: Colors.red[50],
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.red[200]!),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.red[200]!, width: 1.5),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.red.withOpacity(0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
                               child: Row(
                                 children: [
@@ -306,26 +379,30 @@ class BookDetailScreen extends StatelessWidget {
           ),
           const Text(': '),
           Expanded(
-            child: GestureDetector(
-              onTap: copyable ? () => _copyToClipboard(null as BuildContext, value, label) : null,
-              child: Text(
-                value.isEmpty ? '-' : value,
-                style: TextStyle(
-                  color: copyable ? Colors.blue[600] : Colors.grey[800],
-                  decoration: copyable ? TextDecoration.underline : null,
+            child: Builder(
+              builder: (context) => GestureDetector(
+                onTap: copyable ? () => _copyToClipboard(context, value, label) : null,
+                child: Text(
+                  value.isEmpty ? '-' : value,
+                  style: TextStyle(
+                    color: copyable ? const Color(0xFF667eea) : Colors.grey[800],
+                    decoration: copyable ? TextDecoration.underline : null,
+                  ),
                 ),
               ),
             ),
           ),
           if (copyable)
-            IconButton(
-              icon: Icon(
-                Icons.copy,
-                size: 16,
-                color: Colors.grey[600],
+            Builder(
+              builder: (context) => IconButton(
+                icon: Icon(
+                  Icons.copy,
+                  size: 16,
+                  color: Colors.grey[600],
+                ),
+                onPressed: () => _copyToClipboard(context, value, label),
+                tooltip: 'Salin',
               ),
-              onPressed: () => _copyToClipboard(null as BuildContext, value, label),
-              tooltip: 'Salin',
             ),
         ],
       ),

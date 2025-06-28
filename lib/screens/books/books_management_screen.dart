@@ -37,9 +37,9 @@ class _BooksManagementScreenState extends State<BooksManagementScreen> {
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading books: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error loading books: $e')));
     }
   }
 
@@ -48,12 +48,21 @@ class _BooksManagementScreenState extends State<BooksManagementScreen> {
       if (query.isEmpty) {
         _filteredBooks = _books;
       } else {
-        _filteredBooks = _books
-            .where((book) =>
-                book['title'].toLowerCase().contains(query.toLowerCase()) ||
-                (book['author'] ?? '').toLowerCase().contains(query.toLowerCase()) ||
-                (book['isbn'] ?? '').toLowerCase().contains(query.toLowerCase()))
-            .toList();
+        _filteredBooks =
+            _books
+                .where(
+                  (book) =>
+                      book['title'].toLowerCase().contains(
+                        query.toLowerCase(),
+                      ) ||
+                      (book['author'] ?? '').toLowerCase().contains(
+                        query.toLowerCase(),
+                      ) ||
+                      (book['isbn'] ?? '').toLowerCase().contains(
+                        query.toLowerCase(),
+                      ),
+                )
+                .toList();
       }
     });
   }
@@ -61,43 +70,45 @@ class _BooksManagementScreenState extends State<BooksManagementScreen> {
   void _showAddBookDialog() {
     showDialog(
       context: context,
-      builder: (context) => AddEditBookDialog(
-        onSave: (book) async {
-          try {
-            await _dbHelper.insertBook(book);
-            _loadBooks();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Book added successfully')),
-            );
-          } catch (e) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error adding book: $e')),
-            );
-          }
-        },
-      ),
+      builder:
+          (context) => AddEditBookDialog(
+            onSave: (book) async {
+              try {
+                await _dbHelper.insertBook(book);
+                _loadBooks();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Book added successfully')),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error adding book: $e')),
+                );
+              }
+            },
+          ),
     );
   }
 
   void _showEditBookDialog(Map<String, dynamic> book) {
     showDialog(
       context: context,
-      builder: (context) => AddEditBookDialog(
-        book: book,
-        onSave: (updatedBook) async {
-          try {
-            await _dbHelper.updateBook(book['book_id'], updatedBook);
-            _loadBooks();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Book updated successfully')),
-            );
-          } catch (e) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error updating book: $e')),
-            );
-          }
-        },
-      ),
+      builder:
+          (context) => AddEditBookDialog(
+            book: book,
+            onSave: (updatedBook) async {
+              try {
+                await _dbHelper.updateBook(book['book_id'], updatedBook);
+                _loadBooks();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Book updated successfully')),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error updating book: $e')),
+                );
+              }
+            },
+          ),
     );
   }
 
@@ -108,10 +119,7 @@ class _BooksManagementScreenState extends State<BooksManagementScreen> {
       appBar: AppBar(
         title: const Text(
           'Books Management',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -120,10 +128,7 @@ class _BooksManagementScreenState extends State<BooksManagementScreen> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF667eea),
-                Color(0xFF764ba2),
-              ],
+              colors: [Color(0xFF667eea), Color(0xFF764ba2)],
             ),
           ),
         ),
@@ -137,10 +142,7 @@ class _BooksManagementScreenState extends State<BooksManagementScreen> {
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF667eea),
-                  Color(0xFF764ba2),
-                ],
+                colors: [Color(0xFF667eea), Color(0xFF764ba2)],
               ),
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(30),
@@ -229,273 +231,291 @@ class _BooksManagementScreenState extends State<BooksManagementScreen> {
             ),
           ),
           Expanded(
-            child: _isLoading
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Color(0xFF667eea),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Loading books...',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : _filteredBooks.isEmpty
+            child:
+                _isLoading
                     ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.library_books_outlined,
-                              size: 80,
-                              color: Colors.grey[400],
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Color(0xFF667eea),
                             ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No books found',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey[600],
-                              ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Loading books...',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 16,
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Try adjusting your search or add new books',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[500],
-                              ),
+                          ),
+                        ],
+                      ),
+                    )
+                    : _filteredBooks.isEmpty
+                    ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.library_books_outlined,
+                            size: 80,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No books found',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey[600],
                             ),
-                          ],
-                        ),
-                      )
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Try adjusting your search or add new books',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
                     : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _filteredBooks.length,
-                        itemBuilder: (context, index) {
-                          final book = _filteredBooks[index];
-                          return AnimatedContainer(
-                            duration: Duration(milliseconds: 300 + (index * 50)),
-                            curve: Curves.easeOutBack,
-                            margin: const EdgeInsets.only(bottom: 16),
-                            child: Card(
-                              elevation: 8,
-                              shadowColor: Colors.black.withOpacity(0.1),
-                              shape: RoundedRectangleBorder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _filteredBooks.length,
+                      itemBuilder: (context, index) {
+                        final book = _filteredBooks[index];
+                        return AnimatedContainer(
+                          duration: Duration(milliseconds: 300 + (index * 50)),
+                          curve: Curves.easeOutBack,
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: Card(
+                            elevation: 8,
+                            shadowColor: Colors.black.withOpacity(0.1),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20),
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      Colors.white,
-                                      Colors.grey[50]!,
-                                    ],
-                                  ),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [Colors.white, Colors.grey[50]!],
                                 ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 60,
-                                        height: 80,
-                                        decoration: BoxDecoration(
-                                          gradient: const LinearGradient(
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                            colors: [
-                                              Color(0xFF667eea),
-                                              Color(0xFF764ba2),
-                                            ],
-                                          ),
-                                          borderRadius: BorderRadius.circular(12),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Color(0xFF667eea).withOpacity(0.3),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 4),
-                                            ),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 60,
+                                      height: 80,
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            Color(0xFF667eea),
+                                            Color(0xFF764ba2),
                                           ],
                                         ),
-                                        child: Center(
-                                          child: Text(
-                                            book['title'][0].toUpperCase(),
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 24,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                        borderRadius: BorderRadius.circular(12),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Color(
+                                              0xFF667eea,
+                                            ).withOpacity(0.3),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          book['title'][0].toUpperCase(),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold,
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              book['title'],
-                                              style: const TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold,
-                                                color: Color(0xFF2D3748),
-                                              ),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            book['title'],
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF2D3748),
                                             ),
-                                            const SizedBox(height: 8),
-                                            if (book['author'] != null)
-                                              Row(
-                                                children: [
-                                                  Icon(
-                                                    Icons.person_outline,
-                                                    size: 16,
-                                                    color: Colors.grey[600],
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Expanded(
-                                                    child: Text(
-                                                      book['author'],
-                                                      style: TextStyle(
-                                                        fontSize: 14,
-                                                        color: Colors.grey[600],
-                                                      ),
-                                                      maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            if (book['isbn'] != null)
-                                              Row(
-                                                children: [
-                                                  Icon(
-                                                    Icons.qr_code,
-                                                    size: 16,
-                                                    color: Colors.grey[600],
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Text(
-                                                    book['isbn'],
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          if (book['author'] != null)
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.person_outline,
+                                                  size: 16,
+                                                  color: Colors.grey[600],
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Expanded(
+                                                  child: Text(
+                                                    book['author'],
                                                     style: TextStyle(
-                                                      fontSize: 12,
+                                                      fontSize: 14,
                                                       color: Colors.grey[600],
                                                     ),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                   ),
-                                                ],
-                                              ),
-                                            const SizedBox(height: 8),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: 12,
-                                                vertical: 6,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: book['stock_quantity'] > 0
-                                                    ? Colors.green.withOpacity(0.1)
-                                                    : Colors.red.withOpacity(0.1),
-                                                borderRadius: BorderRadius.circular(20),
-                                                border: Border.all(
-                                                  color: book['stock_quantity'] > 0
-                                                      ? Colors.green
-                                                      : Colors.red,
-                                                  width: 1,
                                                 ),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(
+                                              ],
+                                            ),
+                                          if (book['isbn'] != null)
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.qr_code,
+                                                  size: 16,
+                                                  color: Colors.grey[600],
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  book['isbn'],
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey[600],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          const SizedBox(height: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 6,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  book['stock_quantity'] > 0
+                                                      ? Colors.green
+                                                          .withOpacity(0.1)
+                                                      : Colors.red.withOpacity(
+                                                        0.1,
+                                                      ),
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              border: Border.all(
+                                                color:
                                                     book['stock_quantity'] > 0
-                                                        ? Icons.check_circle_outline
-                                                        : Icons.warning_outlined,
-                                                    size: 16,
-                                                    color: book['stock_quantity'] > 0
                                                         ? Colors.green
                                                         : Colors.red,
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Text(
-                                                    'Stock: ${book['stock_quantity']}',
-                                                    style: TextStyle(
-                                                      fontSize: 12,
-                                                      fontWeight: FontWeight.w500,
-                                                      color: book['stock_quantity'] > 0
+                                                width: 1,
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  book['stock_quantity'] > 0
+                                                      ? Icons
+                                                          .check_circle_outline
+                                                      : Icons.warning_outlined,
+                                                  size: 16,
+                                                  color:
+                                                      book['stock_quantity'] > 0
                                                           ? Colors.green
                                                           : Colors.red,
-                                                    ),
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  'Stock: ${book['stock_quantity']}',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w500,
+                                                    color:
+                                                        book['stock_quantity'] >
+                                                                0
+                                                            ? Colors.green
+                                                            : Colors.red,
                                                   ),
-                                                ],
-                                              ),
+                                                ),
+                                              ],
                                             ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
                                       ),
-                                      Container(
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey[100],
-                                          borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[100],
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: PopupMenuButton(
+                                        icon: Icon(
+                                          Icons.more_vert,
+                                          color: Colors.grey[600],
                                         ),
-                                        child: PopupMenuButton(
-                                          icon: Icon(
-                                            Icons.more_vert,
-                                            color: Colors.grey[600],
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
                                           ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                          itemBuilder: (context) => [
-                                            PopupMenuItem(
-                                              value: 'edit',
-                                              child: Row(
-                                                children: [
-                                                  Icon(
-                                                    Icons.edit_outlined,
-                                                    size: 18,
-                                                    color: Color(0xFF667eea),
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Text(
-                                                    'Edit Book',
-                                                    style: TextStyle(
+                                        ),
+                                        itemBuilder:
+                                            (context) => [
+                                              PopupMenuItem(
+                                                value: 'edit',
+                                                child: Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons.edit_outlined,
+                                                      size: 18,
                                                       color: Color(0xFF667eea),
-                                                      fontWeight: FontWeight.w500,
                                                     ),
-                                                  ),
-                                                ],
+                                                    const SizedBox(width: 8),
+                                                    Text(
+                                                      'Edit Book',
+                                                      style: TextStyle(
+                                                        color: Color(
+                                                          0xFF667eea,
+                                                        ),
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
-                                            ),
-                                          ],
-                                          onSelected: (value) {
-                                            if (value == 'edit') {
-                                              _showEditBookDialog(book);
-                                            }
-                                          },
-                                        ),
+                                            ],
+                                        onSelected: (value) {
+                                          if (value == 'edit') {
+                                            _showEditBookDialog(book);
+                                          }
+                                        },
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        );
+                      },
+                    ),
           ),
         ],
       ),
@@ -505,10 +525,7 @@ class _BooksManagementScreenState extends State<BooksManagementScreen> {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF667eea),
-              Color(0xFF764ba2),
-            ],
+            colors: [Color(0xFF667eea), Color(0xFF764ba2)],
           ),
           boxShadow: [
             BoxShadow(
@@ -522,11 +539,7 @@ class _BooksManagementScreenState extends State<BooksManagementScreen> {
           onPressed: _showAddBookDialog,
           backgroundColor: Colors.transparent,
           elevation: 0,
-          child: const Icon(
-            Icons.add,
-            color: Colors.white,
-            size: 28,
-          ),
+          child: const Icon(Icons.add, color: Colors.white, size: 28),
         ),
       ),
     );
@@ -537,11 +550,8 @@ class AddEditBookDialog extends StatefulWidget {
   final Map<String, dynamic>? book;
   final Function(Map<String, dynamic>) onSave;
 
-  const AddEditBookDialog({
-    Key? key,
-    this.book,
-    required this.onSave,
-  }) : super(key: key);
+  const AddEditBookDialog({Key? key, this.book, required this.onSave})
+    : super(key: key);
 
   @override
   State<AddEditBookDialog> createState() => _AddEditBookDialogState();
@@ -562,13 +572,25 @@ class _AddEditBookDialogState extends State<AddEditBookDialog> {
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.book?['title'] ?? '');
-    _authorController = TextEditingController(text: widget.book?['author'] ?? '');
+    _authorController = TextEditingController(
+      text: widget.book?['author'] ?? '',
+    );
     _isbnController = TextEditingController(text: widget.book?['isbn'] ?? '');
-    _publisherController = TextEditingController(text: widget.book?['publisher'] ?? '');
-    _yearController = TextEditingController(text: widget.book?['year']?.toString() ?? '');
-    _pagesController = TextEditingController(text: widget.book?['pages']?.toString() ?? '');
-    _categoryController = TextEditingController(text: widget.book?['category'] ?? '');
-    _stockController = TextEditingController(text: widget.book?['stock_quantity']?.toString() ?? '1');
+    _publisherController = TextEditingController(
+      text: widget.book?['publisher'] ?? '',
+    );
+    _yearController = TextEditingController(
+      text: widget.book?['year']?.toString() ?? '',
+    );
+    _pagesController = TextEditingController(
+      text: widget.book?['pages']?.toString() ?? '',
+    );
+    _categoryController = TextEditingController(
+      text: widget.book?['category'] ?? '',
+    );
+    _stockController = TextEditingController(
+      text: widget.book?['stock_quantity']?.toString() ?? '1',
+    );
   }
 
   @override
@@ -587,9 +609,7 @@ class _AddEditBookDialogState extends State<AddEditBookDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       elevation: 16,
       child: Container(
         constraints: const BoxConstraints(maxWidth: 500),
@@ -598,10 +618,7 @@ class _AddEditBookDialogState extends State<AddEditBookDialog> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Colors.white,
-              Colors.grey[50]!,
-            ],
+            colors: [Colors.white, Colors.grey[50]!],
           ),
         ),
         child: Column(
@@ -614,10 +631,7 @@ class _AddEditBookDialogState extends State<AddEditBookDialog> {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF667eea),
-                    Color(0xFF764ba2),
-                  ],
+                  colors: [Color(0xFF667eea), Color(0xFF764ba2)],
                 ),
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(20),
@@ -652,7 +666,7 @@ class _AddEditBookDialogState extends State<AddEditBookDialog> {
                           ),
                         ),
                         Text(
-                          widget.book == null 
+                          widget.book == null
                               ? 'Fill in the book details below'
                               : 'Update the book information',
                           style: TextStyle(
@@ -741,7 +755,8 @@ class _AddEditBookDialogState extends State<AddEditBookDialog> {
                           if (value == null || value.isEmpty) {
                             return 'Please enter stock quantity';
                           }
-                          if (int.tryParse(value) == null || int.parse(value) < 1) {
+                          if (int.tryParse(value) == null ||
+                              int.parse(value) < 1) {
                             return 'Please enter a valid stock quantity';
                           }
                           return null;
@@ -790,10 +805,7 @@ class _AddEditBookDialogState extends State<AddEditBookDialog> {
                         gradient: const LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFF667eea),
-                            Color(0xFF764ba2),
-                          ],
+                          colors: [Color(0xFF667eea), Color(0xFF764ba2)],
                         ),
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
@@ -807,15 +819,35 @@ class _AddEditBookDialogState extends State<AddEditBookDialog> {
                       child: ElevatedButton(
                         onPressed: () {
                           if (_formKey.currentState!.validate()) {
-                            final stockQuantity = int.parse(_stockController.text);
+                            final stockQuantity = int.parse(
+                              _stockController.text,
+                            );
                             final book = {
                               'title': _titleController.text,
-                              'author': _authorController.text.isEmpty ? null : _authorController.text,
-                              'isbn': _isbnController.text.isEmpty ? null : _isbnController.text,
-                              'publisher': _publisherController.text.isEmpty ? null : _publisherController.text,
-                              'year': _yearController.text.isEmpty ? null : int.tryParse(_yearController.text),
-                              'pages': _pagesController.text.isEmpty ? null : int.tryParse(_pagesController.text),
-                              'category': _categoryController.text.isEmpty ? null : _categoryController.text,
+                              'author':
+                                  _authorController.text.isEmpty
+                                      ? null
+                                      : _authorController.text,
+                              'isbn':
+                                  _isbnController.text.isEmpty
+                                      ? null
+                                      : _isbnController.text,
+                              'publisher':
+                                  _publisherController.text.isEmpty
+                                      ? null
+                                      : _publisherController.text,
+                              'year':
+                                  _yearController.text.isEmpty
+                                      ? null
+                                      : int.tryParse(_yearController.text),
+                              'pages':
+                                  _pagesController.text.isEmpty
+                                      ? null
+                                      : int.tryParse(_pagesController.text),
+                              'category':
+                                  _categoryController.text.isEmpty
+                                      ? null
+                                      : _categoryController.text,
                               'stock_quantity': stockQuantity,
                             };
                             widget.onSave(book);
@@ -889,24 +921,15 @@ class _AddEditBookDialogState extends State<AddEditBookDialog> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(
-              color: Color(0xFF667eea),
-              width: 2,
-            ),
+            borderSide: const BorderSide(color: Color(0xFF667eea), width: 2),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(
-              color: Colors.red,
-              width: 2,
-            ),
+            borderSide: const BorderSide(color: Colors.red, width: 2),
           ),
           focusedErrorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(
-              color: Colors.red,
-              width: 2,
-            ),
+            borderSide: const BorderSide(color: Colors.red, width: 2),
           ),
         ),
       ),
