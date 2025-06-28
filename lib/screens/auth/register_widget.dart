@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
-import '../database/database_helper.dart';
-import '../services/session_manager.dart';
-import 'main_navigation_screen.dart';
+import 'auth_controller.dart';
+import '../core/main_navigation_screen.dart';
 
-class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+class RegisterWidget extends StatefulWidget {
+  const RegisterWidget({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  State<RegisterWidget> createState() => _RegisterWidgetState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterWidgetState extends State<RegisterWidget> {
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -30,62 +29,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  Future<void> _register() async {
+  Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       _isLoading = true;
     });
 
-    try {
-      final dbHelper = DatabaseHelper();
-      bool success = await dbHelper.registerUser(
-        fullName: _fullNameController.text.trim(),
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-        role: _selectedRole,
-      );
+    final result = await AuthController.register(
+      fullName: _fullNameController.text,
+      email: _emailController.text,
+      password: _passwordController.text,
+      role: _selectedRole,
+    );
 
-      if (success) {
-        // Auto login after successful registration
-        final user = await dbHelper.authenticateUser(
-          _emailController.text.trim(),
-          _passwordController.text,
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (result.isSuccess) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
         );
-
-        if (user != null) {
-          await SessionManager.saveUserSession(user);
-          
-          if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-            );
-          }
-        }
       } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Email sudah terdaftar atau terjadi kesalahan'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Terjadi kesalahan: $e'),
+            content: Text(result.message),
             backgroundColor: Colors.red,
           ),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
       }
     }
   }
@@ -164,6 +137,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         // Full Name Field
                         TextFormField(
                           controller: _fullNameController,
+                          validator: AuthController.validateFullName,
                           decoration: InputDecoration(
                             labelText: 'Nama Lengkap',
                             prefixIcon: const Icon(Icons.person_outlined),
@@ -175,15 +149,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               borderSide: BorderSide(color: Colors.grey[300]!),
                             ),
                           ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Nama lengkap tidak boleh kosong';
-                            }
-                            if (value.length < 2) {
-                              return 'Nama lengkap minimal 2 karakter';
-                            }
-                            return null;
-                          },
                         ),
                         const SizedBox(height: 16),
                         
@@ -191,6 +156,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
+                          validator: AuthController.validateEmail,
                           decoration: InputDecoration(
                             labelText: 'Email',
                             prefixIcon: const Icon(Icons.email_outlined),
@@ -202,15 +168,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               borderSide: BorderSide(color: Colors.grey[300]!),
                             ),
                           ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Email tidak boleh kosong';
-                            }
-                            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                              return 'Format email tidak valid';
-                            }
-                            return null;
-                          },
                         ),
                         const SizedBox(height: 16),
                         
@@ -218,7 +175,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         DropdownButtonFormField<String>(
                           value: _selectedRole,
                           decoration: InputDecoration(
-                            labelText: 'Role',
+                            labelText: 'Peran',
                             prefixIcon: const Icon(Icons.work_outlined),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -230,12 +187,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           items: const [
                             DropdownMenuItem(
-                              value: 'staff',
-                              child: Text('Staff'),
+                              value: 'admin',
+                              child: Text('Administrator'),
                             ),
                             DropdownMenuItem(
-                              value: 'admin',
-                              child: Text('Admin'),
+                              value: 'staff',
+                              child: Text('Staff'),
                             ),
                           ],
                           onChanged: (value) {
@@ -250,12 +207,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         TextFormField(
                           controller: _passwordController,
                           obscureText: _obscurePassword,
+                          validator: AuthController.validatePassword,
                           decoration: InputDecoration(
-                            labelText: 'Password',
+                            labelText: 'Kata Sandi',
                             prefixIcon: const Icon(Icons.lock_outlined),
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                _obscurePassword ? Icons.visibility_off : Icons.visibility,
                               ),
                               onPressed: () {
                                 setState(() {
@@ -271,15 +229,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               borderSide: BorderSide(color: Colors.grey[300]!),
                             ),
                           ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Password tidak boleh kosong';
-                            }
-                            if (value.length < 6) {
-                              return 'Password minimal 6 karakter';
-                            }
-                            return null;
-                          },
                         ),
                         const SizedBox(height: 16),
                         
@@ -287,12 +236,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         TextFormField(
                           controller: _confirmPasswordController,
                           obscureText: _obscureConfirmPassword,
+                          validator: (value) => AuthController.validateConfirmPassword(
+                            value,
+                            _passwordController.text,
+                          ),
                           decoration: InputDecoration(
-                            labelText: 'Konfirmasi Password',
+                            labelText: 'Konfirmasi Kata Sandi',
                             prefixIcon: const Icon(Icons.lock_outlined),
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
                               ),
                               onPressed: () {
                                 setState(() {
@@ -308,15 +261,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               borderSide: BorderSide(color: Colors.grey[300]!),
                             ),
                           ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Konfirmasi password tidak boleh kosong';
-                            }
-                            if (value != _passwordController.text) {
-                              return 'Password tidak sama';
-                            }
-                            return null;
-                          },
                         ),
                         const SizedBox(height: 24),
                         
@@ -325,7 +269,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           width: double.infinity,
                           height: 50,
                           child: ElevatedButton(
-                            onPressed: _isLoading ? null : _register,
+                            onPressed: _isLoading ? null : _handleRegister,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.green[600],
                               foregroundColor: Colors.white,
@@ -366,13 +310,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       'Sudah punya akun? ',
                       style: TextStyle(color: Colors.grey[600]),
                     ),
-                    TextButton(
-                      onPressed: () {
+                    GestureDetector(
+                      onTap: () {
                         Navigator.of(context).pop();
                       },
-                      child: const Text(
+                      child: Text(
                         'Masuk di sini',
                         style: TextStyle(
+                          color: Colors.green[600],
                           fontWeight: FontWeight.w600,
                         ),
                       ),

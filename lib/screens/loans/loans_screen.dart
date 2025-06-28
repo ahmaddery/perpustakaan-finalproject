@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../database/database_helper.dart';
-import '../models/loan_model.dart';
-import '../models/member_model.dart';
-import '../models/book_model.dart';
-import '../models/payment_model.dart';
-import '../services/book_service.dart';
-import '../services/localization_service.dart';
-import '../services/settings_service.dart';
-import '../services/payment_service.dart';
+import '../../database/database_helper.dart';
+import '../../models/loan_model.dart';
+import '../../models/member_model.dart';
+import '../../models/book_model.dart';
+import '../../models/payment_model.dart';
+import '../../services/book_service.dart';
+import '../../services/payment_service.dart';
 
 class LoansScreen extends StatefulWidget {
   const LoansScreen({Key? key}) : super(key: key);
@@ -25,20 +23,10 @@ class _LoansScreenState extends State<LoansScreen>
   List<Loan> _activeLoans = [];
   List<Loan> _overdueLoans = [];
   bool _isLoading = true;
-  String _currentLanguage = 'id';
-
-  Future<void> _loadLanguage() async {
-    final language = await SettingsService.getLanguage();
-    setState(() {
-      _currentLanguage = language;
-    });
-  }
-
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _loadLanguage();
     _loadLoans();
   }
 
@@ -78,7 +66,6 @@ class _LoansScreenState extends State<LoansScreen>
     showDialog(
       context: context,
       builder: (context) => EnhancedAddLoanDialog(
-        currentLanguage: _currentLanguage,
         onSave: (memberId, bookData, dueDate, isFromApi) async {
           try {
             int bookId;
@@ -114,7 +101,7 @@ class _LoansScreenState extends State<LoansScreen>
               if (!canBorrow) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(LocalizationService.getText('book_not_available', _currentLanguage)),
+                    content: Text('Buku tidak tersedia untuk dipinjam'),
                   ),
                 );
                 return;
@@ -132,11 +119,11 @@ class _LoansScreenState extends State<LoansScreen>
             
             _loadLoans();
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(LocalizationService.getText('loan_created_success', _currentLanguage))),
+              const SnackBar(content: Text('Peminjaman berhasil dibuat')),
             );
           } catch (e) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('${LocalizationService.getText('error_creating_loan', _currentLanguage)}: $e')),
+              SnackBar(content: Text('Error membuat peminjaman: $e')),
             );
           }
         },
@@ -593,7 +580,7 @@ class _LoansScreenState extends State<LoansScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(LocalizationService.getText('loans', _currentLanguage)),
+        title: const Text('Peminjaman'),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         bottom: TabBar(
@@ -601,9 +588,9 @@ class _LoansScreenState extends State<LoansScreen>
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
           tabs: [
-            Tab(text: '${LocalizationService.getText('all', _currentLanguage)} (${_allLoans.length})'),
-            Tab(text: '${LocalizationService.getText('active', _currentLanguage)} (${_activeLoans.length})'),
-            Tab(text: '${LocalizationService.getText('overdue', _currentLanguage)} (${_overdueLoans.length})'),
+            Tab(text: 'Semua (${_allLoans.length})'),
+            Tab(text: 'Aktif (${_activeLoans.length})'),
+            Tab(text: 'Terlambat (${_overdueLoans.length})'),
           ],
         ),
       ),
@@ -628,9 +615,8 @@ class _LoansScreenState extends State<LoansScreen>
 
 class EnhancedAddLoanDialog extends StatefulWidget {
   final Function(int memberId, Map<String, dynamic> bookData, DateTime dueDate, bool isFromApi) onSave;
-  final String currentLanguage;
 
-  const EnhancedAddLoanDialog({Key? key, required this.onSave, required this.currentLanguage}) : super(key: key);
+  const EnhancedAddLoanDialog({Key? key, required this.onSave}) : super(key: key);
 
   @override
   State<EnhancedAddLoanDialog> createState() => _EnhancedAddLoanDialogState();
@@ -716,7 +702,7 @@ class _EnhancedAddLoanDialogState extends State<EnhancedAddLoanDialog> {
         _isSearching = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${LocalizationService.getText('search_error', widget.currentLanguage)}: $e')),
+        SnackBar(content: Text('Error pencarian: $e')),
       );
     }
   }
@@ -738,7 +724,7 @@ class _EnhancedAddLoanDialogState extends State<EnhancedAddLoanDialog> {
         _isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${LocalizationService.getText('api_load_error', widget.currentLanguage)}: $e')),
+        SnackBar(content: Text('Error memuat data API: $e')),
       );
     }
   }
@@ -763,7 +749,7 @@ class _EnhancedAddLoanDialogState extends State<EnhancedAddLoanDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(LocalizationService.getText('create_new_loan', widget.currentLanguage)),
+      title: const Text('Buat Peminjaman Baru'),
       content: _isLoading
           ? const SizedBox(
               height: 200,
@@ -779,7 +765,7 @@ class _EnhancedAddLoanDialogState extends State<EnhancedAddLoanDialog> {
                   DropdownButtonFormField<int>(
                     value: _selectedMemberId,
                     decoration: InputDecoration(
-                      labelText: LocalizationService.getText('select_member', widget.currentLanguage),
+                      labelText: 'Pilih Anggota',
                       border: const OutlineInputBorder(),
                     ),
                     items: _members.map((member) {
@@ -799,16 +785,16 @@ class _EnhancedAddLoanDialogState extends State<EnhancedAddLoanDialog> {
                   // Book Source Toggle
                   Row(
                     children: [
-                      Text(LocalizationService.getText('book_source', widget.currentLanguage)),
+                      const Text('Sumber Buku'),
                       const SizedBox(width: 16),
                       ChoiceChip(
-                        label: Text(LocalizationService.getText('local_books', widget.currentLanguage)),
+                        label: const Text('Buku Lokal'),
                         selected: !_useApiBooks,
                         onSelected: (selected) => _toggleBookSource(!selected),
                       ),
                       const SizedBox(width: 8),
                       ChoiceChip(
-                        label: Text(LocalizationService.getText('online_books', widget.currentLanguage)),
+                        label: const Text('Buku Online'),
                         selected: _useApiBooks,
                         onSelected: (selected) => _toggleBookSource(selected),
                       ),
@@ -820,7 +806,7 @@ class _EnhancedAddLoanDialogState extends State<EnhancedAddLoanDialog> {
                   TextField(
                     controller: _searchController,
                     decoration: InputDecoration(
-                      labelText: LocalizationService.getText('search_books', widget.currentLanguage),
+                      labelText: 'Cari Buku',
                       border: const OutlineInputBorder(),
                       prefixIcon: const Icon(Icons.search),
                       suffixIcon: _isSearching
@@ -856,7 +842,7 @@ class _EnhancedAddLoanDialogState extends State<EnhancedAddLoanDialog> {
                       child: _filteredBooks.isEmpty
                           ? Center(
                               child: Text(
-                                LocalizationService.getText('no_books_found', widget.currentLanguage),
+                                'Tidak ada buku ditemukan',
                                 style: const TextStyle(fontSize: 16),
                               ),
                             )
@@ -886,12 +872,12 @@ class _EnhancedAddLoanDialogState extends State<EnhancedAddLoanDialog> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       if (_useApiBooks) ...[
-                                        Text('${LocalizationService.getText('publisher', widget.currentLanguage)}: ${book.publisher}'),
-                                        Text('${LocalizationService.getText('year', widget.currentLanguage)}: ${book.year}'),
-                                        Text('${LocalizationService.getText('pages', widget.currentLanguage)}: ${book.pages}'),
+                                        Text('Penerbit: ${book.publisher}'),
+                                        Text('Tahun: ${book.year}'),
+                                        Text('Halaman: ${book.pages}'),
                                       ] else ...[
-                                        Text(LocalizationService.getText('author', widget.currentLanguage) + ': ' + (book['author'] ?? 'Unknown')),
-                                        Text(LocalizationService.getText('stock', widget.currentLanguage) + ': ' + book['stock_quantity'].toString()),
+                                        Text('Penulis: ${book['author'] ?? 'Unknown'}'),
+                                        Text('Stok: ${book['stock_quantity']}'),
                                       ]
                                     ],
                                   ),
@@ -922,7 +908,7 @@ class _EnhancedAddLoanDialogState extends State<EnhancedAddLoanDialog> {
                   // Due Date Selection
                   Row(
                     children: [
-                      Text('${LocalizationService.getText('due_date', widget.currentLanguage)}: '),
+                      const Text('Tanggal Jatuh Tempo: '),
                       TextButton(
                         onPressed: () async {
                           final date = await showDatePicker(
@@ -950,7 +936,7 @@ class _EnhancedAddLoanDialogState extends State<EnhancedAddLoanDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text(LocalizationService.getText('cancel', widget.currentLanguage)),
+          child: const Text('Batal'),
         ),
         ElevatedButton(
           onPressed: _selectedMemberId != null && _selectedBook != null
@@ -959,7 +945,7 @@ class _EnhancedAddLoanDialogState extends State<EnhancedAddLoanDialog> {
                   Navigator.pop(context);
                 }
               : null,
-          child: Text(LocalizationService.getText('create_loan', widget.currentLanguage)),
+          child: const Text('Buat Peminjaman'),
         ),
       ],
     );

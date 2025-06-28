@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/book_model.dart';
-import '../services/book_service.dart';
+import '../../models/book_model.dart';
+import '../../services/book_service.dart';
 import 'book_detail_screen.dart';
 
 class BooksScreen extends StatefulWidget {
@@ -141,7 +141,7 @@ class _BooksScreenState extends State<BooksScreen> {
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text(
-          'Koleksi Buku Stephen King',
+          'Koleksi Buku online',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.blue[600],

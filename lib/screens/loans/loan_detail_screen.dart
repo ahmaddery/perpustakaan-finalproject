@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../database/database_helper.dart';
-import '../models/loan_model.dart';
-import '../models/payment_model.dart';
-import '../services/localization_service.dart';
-import '../services/settings_service.dart';
-import '../services/payment_service.dart';
+import '../../database/database_helper.dart';
+import '../../models/loan_model.dart';
+import '../../models/payment_model.dart';
+import '../../services/payment_service.dart';
 
 class LoanDetailScreen extends StatefulWidget {
   final int loanId;
@@ -18,26 +16,15 @@ class LoanDetailScreen extends StatefulWidget {
 
 class _LoanDetailScreenState extends State<LoanDetailScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper();
-  // SettingsService methods are static, no need to instantiate
   
   Loan? _loan;
   Map<String, dynamic>? _member;
   Map<String, dynamic>? _book;
   bool _isLoading = true;
-  String _currentLanguage = 'id';
-
   @override
   void initState() {
     super.initState();
-    _loadLanguage();
     _loadLoanDetails();
-  }
-
-  Future<void> _loadLanguage() async {
-    final language = await SettingsService.getLanguage();
-    setState(() {
-      _currentLanguage = language;
-    });
   }
 
   Future<void> _loadLoanDetails() async {
@@ -347,7 +334,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(LocalizationService.getText('loan_details', _currentLanguage)),
+        title: const Text('Detail Peminjaman'),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
       ),

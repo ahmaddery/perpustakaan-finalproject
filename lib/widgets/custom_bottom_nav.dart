@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
-import '../services/localization_service.dart';
 import '../widgets/notification_badge.dart';
 
 class CustomBottomNavigation extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
-  final String currentLanguage;
 
   const CustomBottomNavigation({
     Key? key,
     required this.currentIndex,
     required this.onTap,
-    required this.currentLanguage,
   }) : super(key: key);
 
   @override
@@ -34,32 +31,32 @@ class CustomBottomNavigation extends StatelessWidget {
           _buildNavItem(
             index: 0,
             icon: Icons.dashboard_rounded,
-            label: LocalizationService.getText('dashboard', currentLanguage),
+            label: 'Dashboard',
           ),
           _buildNavItem(
             index: 1,
             icon: Icons.library_books_rounded,
-            label: LocalizationService.getText('book_collection', currentLanguage),
+            label: 'Koleksi Buku',
           ),
           _buildNavItem(
             index: 2,
             icon: Icons.people_rounded,
-            label: currentLanguage == 'id' ? 'Anggota' : 'Members',
+            label: 'Anggota',
           ),
           _buildNavItem(
             index: 3,
             icon: Icons.assignment_rounded,
-            label: currentLanguage == 'id' ? 'Peminjaman' : 'Loans',
+            label: 'Peminjaman',
           ),
           _buildNavItemWithBadge(
             index: 4,
             icon: Icons.notifications_rounded,
-            label: currentLanguage == 'id' ? 'Notifikasi' : 'Notifications',
+            label: 'Notifikasi',
           ),
           _buildNavItem(
             index: 5,
             icon: Icons.settings_rounded,
-            label: LocalizationService.getText('settings', currentLanguage),
+            label: 'Pengaturan',
           ),
         ],
       ),

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/notification_service.dart';
-import '../services/localization_service.dart';
-import '../services/settings_service.dart';
-import 'loan_detail_screen.dart';
+import '../../services/notification_service.dart';
+import '../loans/loan_detail_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({Key? key}) : super(key: key);
@@ -15,13 +13,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   final NotificationService _notificationService = NotificationService();
   List<NotificationData> _notifications = [];
   bool _isLoading = true;
-  String _currentLanguage = 'id';
   String _selectedFilter = 'all'; // all, due_reminder, overdue
 
   @override
   void initState() {
     super.initState();
-    _loadLanguage();
     _loadNotifications();
     _notificationService.addListener(_onNotificationReceived);
   }
@@ -30,13 +26,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   void dispose() {
     _notificationService.removeListener(_onNotificationReceived);
     super.dispose();
-  }
-
-  Future<void> _loadLanguage() async {
-    final language = await SettingsService.getLanguage();
-    setState(() {
-      _currentLanguage = language;
-    });
   }
 
   void _onNotificationReceived(NotificationData notification) {

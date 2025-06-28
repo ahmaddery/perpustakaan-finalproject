@@ -1,39 +1,21 @@
 import 'package:flutter/material.dart';
-import '../database/database_helper.dart';
-import '../services/session_manager.dart';
-import '../services/settings_service.dart';
-import '../services/localization_service.dart';
-import '../services/notification_service.dart';
+import 'auth_controller.dart';
+import '../core/main_navigation_screen.dart';
 import 'register_screen.dart';
-import 'main_navigation_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class LoginWidget extends StatefulWidget {
+  const LoginWidget({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<LoginWidget> createState() => _LoginWidgetState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginWidgetState extends State<LoginWidget> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
-  String _currentLanguage = 'id';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadLanguage();
-  }
-
-  Future<void> _loadLanguage() async {
-    final language = await SettingsService.getLanguage();
-    setState(() {
-      _currentLanguage = language;
-    });
-  }
 
   @override
   void dispose() {
@@ -42,55 +24,34 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _login() async {
+  Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       _isLoading = true;
     });
 
-    try {
-      final dbHelper = DatabaseHelper();
-      final user = await dbHelper.authenticateUser(
-        _emailController.text.trim(),
-        _passwordController.text,
-      );
+    final result = await AuthController.login(
+      email: _emailController.text,
+      password: _passwordController.text,
+    );
 
-      if (user != null) {
-        await SessionManager.saveUserSession(user);
-        
-        // Initialize notification service after successful login
-        await NotificationService().startNotificationService();
-        
-        if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-          );
-        }
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (result.isSuccess) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+        );
       } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(LocalizationService.getText('login_failed', _currentLanguage)),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${LocalizationService.getText('error', _currentLanguage)}: $e'),
+            content: Text(result.message),
             backgroundColor: Colors.red,
           ),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
       }
     }
   }
@@ -124,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 // Title
                 Text(
-                  LocalizationService.getText('app_title', _currentLanguage),
+                  'Perpustakaan Stephen King',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Colors.grey[800],
@@ -132,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _currentLanguage == 'id' ? 'Masuk ke akun Anda' : 'Sign in to your account',
+                  'Masuk ke akun Anda',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: Colors.grey[600],
                   ),
@@ -162,8 +123,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
+                          validator: AuthController.validateEmail,
                           decoration: InputDecoration(
-                            labelText: LocalizationService.getText('email', _currentLanguage),
+                            labelText: 'Email',
                             prefixIcon: const Icon(Icons.email_outlined),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -173,15 +135,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderSide: BorderSide(color: Colors.grey[300]!),
                             ),
                           ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return _currentLanguage == 'id' ? 'Email tidak boleh kosong' : 'Email cannot be empty';
-                            }
-                            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                              return _currentLanguage == 'id' ? 'Format email tidak valid' : 'Invalid email format';
-                            }
-                            return null;
-                          },
                         ),
                         const SizedBox(height: 16),
                         
@@ -189,12 +142,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         TextFormField(
                           controller: _passwordController,
                           obscureText: _obscurePassword,
+                          validator: AuthController.validatePassword,
                           decoration: InputDecoration(
-                            labelText: LocalizationService.getText('password', _currentLanguage),
+                            labelText: 'Kata Sandi',
                             prefixIcon: const Icon(Icons.lock_outlined),
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                _obscurePassword ? Icons.visibility_off : Icons.visibility,
                               ),
                               onPressed: () {
                                 setState(() {
@@ -210,12 +164,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderSide: BorderSide(color: Colors.grey[300]!),
                             ),
                           ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return _currentLanguage == 'id' ? 'Password tidak boleh kosong' : 'Password cannot be empty';
-                            }
-                            return null;
-                          },
                         ),
                         const SizedBox(height: 24),
                         
@@ -224,7 +172,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           width: double.infinity,
                           height: 50,
                           child: ElevatedButton(
-                            onPressed: _isLoading ? null : _login,
+                            onPressed: _isLoading ? null : _handleLogin,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blue[600],
                               foregroundColor: Colors.white,
@@ -242,9 +190,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                     ),
                                   )
-                                : Text(
-                                    LocalizationService.getText('login', _currentLanguage),
-                                    style: const TextStyle(
+                                : const Text(
+                                    'Masuk',
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -262,11 +210,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      _currentLanguage == 'id' ? 'Belum punya akun? ' : "Don't have an account? ",
+                      'Belum punya akun? ',
                       style: TextStyle(color: Colors.grey[600]),
                     ),
-                    TextButton(
-                      onPressed: () {
+                    GestureDetector(
+                      onTap: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) => const RegisterScreen(),
@@ -274,44 +222,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         );
                       },
                       child: Text(
-                        _currentLanguage == 'id' ? 'Daftar di sini' : 'Register here',
-                        style: const TextStyle(
+                        'Daftar di sini',
+                        style: TextStyle(
+                          color: Colors.blue[600],
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
                   ],
-                ),
-                
-                // Demo credentials info
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50],
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.blue[200]!),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        _currentLanguage == 'id' ? 'Demo Login:' : 'Demo Login:',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: Colors.blue[800],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Email: admin@perpustakaan.com\nPassword: admin123',
-                        style: TextStyle(
-                          color: Colors.blue[700],
-                          fontSize: 12,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
                 ),
               ],
             ),

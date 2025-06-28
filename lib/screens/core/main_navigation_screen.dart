@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
-import '../services/session_manager.dart';
-import '../services/settings_service.dart';
-import '../services/localization_service.dart';
-import '../services/notification_service.dart';
-import '../widgets/notification_badge.dart';
-import '../widgets/custom_bottom_nav.dart';
+import '../../services/session_manager.dart';
+import '../../services/notification_service.dart';
+import '../../widgets/notification_badge.dart';
+import '../../widgets/custom_bottom_nav.dart';
 import 'home_screen.dart';
-import 'books_screen.dart';
+import '../books/books_screen.dart';
 import 'settings_screen.dart';
-import 'login_screen.dart';
-import 'members_screen.dart';
-import 'loans_screen.dart';
-import 'books_management_screen.dart';
+import '../auth/login_screen.dart';
+import '../members/members_screen.dart';
+import '../loans/loans_screen.dart';
+import '../books/books_management_screen.dart';
 import 'notifications_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
@@ -23,7 +21,6 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
-  String _currentLanguage = 'id';
   Map<String, dynamic>? _currentUser;
   bool _isLoading = true;
   final NotificationService _notificationService = NotificationService();
@@ -31,20 +28,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
-    _loadLanguage();
     _loadUserData();
     _initializeNotificationService();
   }
 
   Future<void> _initializeNotificationService() async {
     await _notificationService.startNotificationService();
-  }
-
-  Future<void> _loadLanguage() async {
-    final language = await SettingsService.getLanguage();
-    setState(() {
-      _currentLanguage = language;
-    });
   }
 
   Future<void> _loadUserData() async {
@@ -66,14 +55,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(LocalizationService.getText('logout', _currentLanguage)),
-          content: Text(_currentLanguage == 'id' 
-              ? 'Apakah Anda yakin ingin keluar?'
-              : 'Are you sure you want to logout?'),
+          title: const Text('Keluar'),
+          content: const Text(
+            'Apakah Anda yakin ingin keluar?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text(LocalizationService.getText('cancel', _currentLanguage)),
+              child: const Text(
+                'Batal',
+              ),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -81,7 +72,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 await SessionManager.clearSession();
                 if (mounted) {
                   Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const LoginScreen(),
+                    ),
                   );
                 }
               },
@@ -89,7 +82,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
               ),
-              child: Text(LocalizationService.getText('logout', _currentLanguage)),
+              child: const Text(
+                'Keluar',
+              ),
             ),
           ],
         );
@@ -105,19 +100,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     const NotificationsScreen(),
     SettingsScreenWithLogout(
       onLogout: _logout,
-      currentLanguage: _currentLanguage,
-      onLanguageChanged: _loadLanguage,
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (_currentUser == null) {
@@ -125,10 +114,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     }
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: CustomBottomNavigation(
         currentIndex: _currentIndex,
         onTap: (index) {
@@ -136,7 +122,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             _currentIndex = index;
           });
         },
-        currentLanguage: _currentLanguage,
       ),
     );
   }
@@ -153,20 +138,11 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   Map<String, dynamic>? _currentUser;
   bool _isLoading = true;
-  String _currentLanguage = 'id';
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
-    _loadLanguage();
-  }
-
-  Future<void> _loadLanguage() async {
-    final language = await SettingsService.getLanguage();
-    setState(() {
-      _currentLanguage = language;
-    });
   }
 
   Future<void> _loadUserData() async {
@@ -186,19 +162,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: Text(
-          LocalizationService.getText('dashboard', _currentLanguage),
-          style: const TextStyle(
+        title: const Text(
+          'Dashboard',
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -241,7 +213,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         radius: 30,
                         backgroundColor: Colors.white,
                         child: Icon(
-                          _currentUser!['role'] == 'admin' ? Icons.admin_panel_settings : Icons.person,
+                          _currentUser!['role'] == 'admin'
+                              ? Icons.admin_panel_settings
+                              : Icons.person,
                           size: 30,
                           color: Colors.blue[600],
                         ),
@@ -252,7 +226,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              LocalizationService.getText('welcome', _currentLanguage),
+                              'Selamat Datang',
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.9),
                                 fontSize: 14,
@@ -267,13 +241,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                LocalizationService.getText(_currentUser!['role'] ?? 'user', _currentLanguage).toUpperCase(),
+                                (_currentUser!['role'] ?? 'user').toString().toUpperCase(),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
@@ -290,17 +267,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // Quick Actions
             Text(
-              LocalizationService.getText('quick_actions', _currentLanguage),
+              'Aksi Cepat',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: Colors.grey[800],
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // Action Grid
             GridView.count(
               shrinkWrap: true,
@@ -311,8 +288,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 _buildActionCard(
                   icon: Icons.people,
-                  title: LocalizationService.getText('manage_members', _currentLanguage),
-                  subtitle: LocalizationService.getText('member_management', _currentLanguage),
+                  title: 'Kelola Member',
+                  subtitle: 'Manajemen anggota',
                   color: Colors.teal,
                   onTap: () {
                     Navigator.push(
@@ -325,8 +302,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 _buildActionCard(
                   icon: Icons.assignment,
-                  title: LocalizationService.getText('borrowing', _currentLanguage),
-                  subtitle: LocalizationService.getText('book_borrowing', _currentLanguage),
+                  title: 'Peminjaman',
+                  subtitle: 'Peminjaman buku',
                   color: Colors.orange,
                   onTap: () {
                     Navigator.push(
@@ -339,8 +316,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 _buildActionCard(
                   icon: Icons.book,
-                  title: LocalizationService.getText('manage_books', _currentLanguage),
-                  subtitle: LocalizationService.getText('add_edit_books', _currentLanguage),
+                  title: 'Kelola Buku',
+                  subtitle: 'Tambah & edit buku',
                   color: Colors.deepPurple,
                   onTap: () {
                     Navigator.push(
@@ -353,12 +330,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 _buildActionCard(
                   icon: Icons.analytics,
-                  title: LocalizationService.getText('reports', _currentLanguage),
-                  subtitle: LocalizationService.getText('library_reports', _currentLanguage),
+                  title: 'Laporan',
+                  subtitle: 'Laporan perpustakaan',
                   color: Colors.indigo,
                   onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(LocalizationService.getText('feature_under_development', _currentLanguage))),
+                      const SnackBar(
+                        content: Text(
+                          'Fitur sedang dalam pengembangan',
+                        ),
+                      ),
                     );
                   },
                 ),
@@ -402,28 +383,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 32,
-              ),
+              child: Icon(icon, color: color, size: 32),
             ),
             const SizedBox(height: 12),
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
           ],
@@ -436,14 +407,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 // Settings Screen with Logout
 class SettingsScreenWithLogout extends StatelessWidget {
   final VoidCallback onLogout;
-  final String currentLanguage;
-  final VoidCallback onLanguageChanged;
 
   const SettingsScreenWithLogout({
     super.key,
     required this.onLogout,
-    required this.currentLanguage,
-    required this.onLanguageChanged,
   });
 
   @override
@@ -451,9 +418,9 @@ class SettingsScreenWithLogout extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: Text(
-          LocalizationService.getText('settings', currentLanguage),
-          style: const TextStyle(
+        title: const Text(
+          'Pengaturan',
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -465,7 +432,7 @@ class SettingsScreenWithLogout extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: onLogout,
-            tooltip: LocalizationService.getText('logout', currentLanguage),
+            tooltip: 'Keluar',
           ),
         ],
       ),

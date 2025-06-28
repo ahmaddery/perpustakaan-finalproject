@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/notification_service.dart';
 import '../database/database_helper.dart';
-import '../screens/loan_detail_screen.dart';
+import '../screens/loans/loan_detail_screen.dart';
 
 class NotificationWidget extends StatefulWidget {
   const NotificationWidget({Key? key}) : super(key: key);

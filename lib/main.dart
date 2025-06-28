@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'services/session_manager.dart';
 import 'services/notification_service.dart';
-import 'screens/login_screen.dart';
-import 'screens/main_navigation_screen.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/core/main_navigation_screen.dart';
 
 // Global navigator key for accessing context from anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();

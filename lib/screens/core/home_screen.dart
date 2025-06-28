@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import '../services/session_manager.dart';
-import '../services/settings_service.dart';
-import '../services/localization_service.dart';
-import '../widgets/notification_widget.dart';
-import 'login_screen.dart';
-import 'books_screen.dart';
-import 'members_screen.dart';
-import 'loans_screen.dart';
-import 'books_management_screen.dart';
+import '../../services/session_manager.dart';
+import '../../widgets/notification_widget.dart';
+import '../auth/login_screen.dart';
+import '../books/books_screen.dart';
+import '../members/members_screen.dart';
+import '../loans/loans_screen.dart';
+import '../books/books_management_screen.dart';
 import 'settings_screen.dart';
+import 'analytics_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,20 +19,10 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? _currentUser;
   bool _isLoading = true;
-  String _currentLanguage = 'id';
-
   @override
   void initState() {
     super.initState();
     _loadUserData();
-    _loadLanguage();
-  }
-
-  Future<void> _loadLanguage() async {
-    final language = await SettingsService.getLanguage();
-    setState(() {
-      _currentLanguage = language;
-    });
   }
 
   Future<void> _loadUserData() async {
@@ -55,14 +44,12 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(LocalizationService.getText('logout', _currentLanguage)),
-          content: Text(_currentLanguage == 'id' 
-              ? 'Apakah Anda yakin ingin keluar?'
-              : 'Are you sure you want to logout?'),
+          title: Text('Keluar'),
+          content: Text('Apakah Anda yakin ingin keluar?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text(LocalizationService.getText('cancel', _currentLanguage)),
+              child: const Text('Batal'),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -70,7 +57,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 await SessionManager.clearSession();
                 if (mounted) {
                   Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const LoginScreen(),
+                    ),
                   );
                 }
               },
@@ -78,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
               ),
-              child: Text(LocalizationService.getText('logout', _currentLanguage)),
+              child: const Text('Keluar'),
             ),
           ],
         );
@@ -89,11 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (_currentUser == null) {
@@ -104,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: Text(
-          LocalizationService.getText('app_title', _currentLanguage),
+          'Perpustakaan Digital',
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -119,18 +104,16 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () async {
               await Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
               );
-              _loadLanguage(); // Reload language after returning from settings
+
             },
-            tooltip: LocalizationService.getText('settings', _currentLanguage),
+            tooltip: 'Pengaturan',
           ),
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: _logout,
-            tooltip: LocalizationService.getText('logout', _currentLanguage),
+            tooltip: 'Keluar',
           ),
         ],
       ),
@@ -168,7 +151,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         radius: 30,
                         backgroundColor: Colors.white,
                         child: Icon(
-                          _currentUser!['role'] == 'admin' ? Icons.admin_panel_settings : Icons.person,
+                          _currentUser!['role'] == 'admin'
+                              ? Icons.admin_panel_settings
+                              : Icons.person,
                           size: 30,
                           color: Colors.blue[600],
                         ),
@@ -179,7 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              LocalizationService.getText('welcome', _currentLanguage),
+                              'Selamat Datang',
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.9),
                                 fontSize: 14,
@@ -194,13 +179,16 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                LocalizationService.getText(_currentUser!['role'] ?? 'user', _currentLanguage).toUpperCase(),
+                                (_currentUser!['role'] ?? 'user').toString().toUpperCase(),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
@@ -217,66 +205,65 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // Notification Section
             const NotificationWidget(),
             const SizedBox(height: 24),
-            
+
             // User Info Section
             Text(
-              LocalizationService.getText('user_info', _currentLanguage),
+              'Informasi Pengguna',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: Colors.grey[800],
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // User Details Cards
             _buildInfoCard(
               icon: Icons.email,
-              title: LocalizationService.getText('email', _currentLanguage),
+              title: 'Email',
               value: _currentUser!['email'] ?? 'N/A',
               color: Colors.orange,
             ),
             const SizedBox(height: 12),
-            
+
             _buildInfoCard(
               icon: Icons.work,
-              title: LocalizationService.getText('role', _currentLanguage),
-              value: LocalizationService.getText(_currentUser!['role'] ?? 'user', _currentLanguage).toUpperCase(),
+              title: 'Peran',
+              value: (_currentUser!['role'] ?? 'user').toString().toUpperCase(),
               color: Colors.green,
             ),
             const SizedBox(height: 12),
-            
+
             _buildInfoCard(
               icon: Icons.verified_user,
-              title: LocalizationService.getText('status', _currentLanguage),
-              value: (_currentUser!['is_active'] == 1) 
-                  ? LocalizationService.getText('active', _currentLanguage).toUpperCase()
-                  : (_currentLanguage == 'id' ? 'TIDAK AKTIF' : 'INACTIVE'),
-              color: (_currentUser!['is_active'] == 1) ? Colors.green : Colors.red,
+              title: 'Status',
+              value: (_currentUser!['is_active'] == 1) ? 'AKTIF' : 'TIDAK AKTIF',
+              color:
+                  (_currentUser!['is_active'] == 1) ? Colors.green : Colors.red,
             ),
             const SizedBox(height: 12),
-            
+
             _buildInfoCard(
               icon: Icons.access_time,
-              title: LocalizationService.getText('join_date', _currentLanguage),
+              title: 'Tanggal Bergabung',
               value: _formatDate(_currentUser!['created_at']),
               color: Colors.blue,
             ),
             const SizedBox(height: 24),
-            
+
             // Quick Actions
             Text(
-              LocalizationService.getText('quick_actions', _currentLanguage),
+              'Aksi Cepat',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: Colors.grey[800],
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // Action Grid
             GridView.count(
               shrinkWrap: true,
@@ -287,8 +274,8 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _buildActionCard(
                   icon: Icons.library_books,
-                  title: LocalizationService.getText('book_collection', _currentLanguage),
-                  subtitle: LocalizationService.getText('stephen_king_books', _currentLanguage),
+                  title: 'Koleksi Buku',
+                  subtitle: 'Buku Stephen King',
                   color: Colors.purple,
                   onTap: () {
                     Navigator.push(
@@ -301,8 +288,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 _buildActionCard(
                   icon: Icons.book,
-                  title: LocalizationService.getText('manage_books', _currentLanguage),
-                  subtitle: LocalizationService.getText('add_edit_books', _currentLanguage),
+                  title: 'Kelola Buku',
+                  subtitle: 'Tambah & Edit Buku',
                   color: Colors.deepPurple,
                   onTap: () {
                     Navigator.push(
@@ -315,8 +302,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 _buildActionCard(
                   icon: Icons.people,
-                  title: LocalizationService.getText('manage_members', _currentLanguage),
-                  subtitle: LocalizationService.getText('member_management', _currentLanguage),
+                  title: 'Kelola Member',
+                  subtitle: 'Manajemen Anggota',
                   color: Colors.teal,
                   onTap: () {
                     Navigator.push(
@@ -329,8 +316,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 _buildActionCard(
                   icon: Icons.assignment,
-                  title: LocalizationService.getText('borrowing', _currentLanguage),
-                  subtitle: LocalizationService.getText('book_borrowing', _currentLanguage),
+                  title: 'Peminjaman',
+                  subtitle: 'Peminjaman Buku',
                   color: Colors.orange,
                   onTap: () {
                     Navigator.push(
@@ -343,12 +330,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 _buildActionCard(
                   icon: Icons.analytics,
-                  title: LocalizationService.getText('reports', _currentLanguage),
-                  subtitle: LocalizationService.getText('library_reports', _currentLanguage),
+                  title: 'Laporan',
+                  subtitle: 'Laporan Perpustakaan',
                   color: Colors.indigo,
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(LocalizationService.getText('feature_under_development', _currentLanguage))),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AnalyticsScreen(),
+                      ),
                     );
                   },
                 ),
@@ -388,11 +378,7 @@ class _HomeScreenState extends State<HomeScreen> {
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 24,
-            ),
+            child: Icon(icon, color: color, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -454,28 +440,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 32,
-              ),
+              child: Icon(icon, color: color, size: 32),
             ),
             const SizedBox(height: 12),
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
           ],
