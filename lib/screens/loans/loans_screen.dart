@@ -305,9 +305,9 @@ class _LoansScreenState extends State<LoansScreen>
                 onPressed: () async {
                   if (await canLaunchUrl(Uri.parse(invoiceUrl))) {
                     await launchUrl(
-                      Uri.parse(invoiceUrl),
-                      mode: LaunchMode.externalApplication,
-                    );
+                       Uri.parse(invoiceUrl),
+                       mode: LaunchMode.inAppBrowserView,
+                     );
                   }
                 },
                 style: ElevatedButton.styleFrom(

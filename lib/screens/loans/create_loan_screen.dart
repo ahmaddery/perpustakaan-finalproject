@@ -1040,7 +1040,7 @@ class _CreateLoanScreenState extends State<CreateLoanScreen> {
                           final date = await showDatePicker(
                             context: context,
                             initialDate: _dueDate,
-                            firstDate: DateTime.now(),
+                            firstDate: DateTime(2020),
                             lastDate: DateTime.now().add(
                               const Duration(days: 365),
                             ),

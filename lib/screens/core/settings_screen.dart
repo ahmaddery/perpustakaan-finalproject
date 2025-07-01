@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'analytics_screen.dart';
+import '../payment_history_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -57,6 +58,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: const Icon(Icons.analytics, size: 24),
                 label: Text(
                   'Lihat Laporan Analytics',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PaymentHistoryScreen(),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.purple[600],
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
+                ),
+                icon: const Icon(Icons.payment, size: 24),
+                label: Text(
+                  'Riwayat Pembayaran',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,

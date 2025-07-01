@@ -241,7 +241,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
               if (await canLaunchUrl(Uri.parse(invoiceUrl))) {
                 await launchUrl(
                   Uri.parse(invoiceUrl),
-                  mode: LaunchMode.externalApplication,
+                  mode: LaunchMode.inAppBrowserView,
                 );
               }
             },

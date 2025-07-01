@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../models/payment_model.dart';
 
 class PaymentService {
   static const String baseUrl = 'https://above-jay-mature.ngrok-free.app/api';
@@ -182,6 +183,31 @@ class PaymentService {
       }
     } catch (e) {
       throw Exception('Error getting payments: $e');
+    }
+  }
+
+  /// Get all payment history
+  static Future<List<Payment>> getAllPaymentHistory({String? token}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/payments/read/all'),
+        headers: token != null ? authHeaders(token) : headers,
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        if (jsonData['success'] == true && jsonData['data'] != null) {
+          final payments = jsonData['data']['payments'] as List;
+          return payments.map((payment) => Payment.fromJson(payment)).toList();
+        } else {
+          throw Exception(jsonData['message'] ?? 'Failed to get payment history');
+        }
+      } else {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Failed to get payment history');
+      }
+    } catch (e) {
+      throw Exception('Error getting payment history: $e');
     }
   }
 }
