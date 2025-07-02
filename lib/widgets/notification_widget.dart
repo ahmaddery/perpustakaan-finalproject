@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/notification_service.dart';
-import '../database/database_helper.dart';
 import '../screens/loans/loan_detail_screen.dart';
 
 class NotificationWidget extends StatefulWidget {
@@ -30,14 +29,16 @@ class _NotificationWidgetState extends State<NotificationWidget> {
 
   void _onNotificationReceived(NotificationData notification) {
     if (mounted) {
-      setState(() {
-        // Add new notification if not already exists
-        bool exists = _notifications.any((n) => 
-          n.loanId == notification.loanId && n.type == notification.type);
-        if (!exists) {
-          _notifications.insert(0, notification);
-        }
-      });
+      // If this is a refresh trigger, just reload all notifications
+      if (notification.loanId == -1 &&
+          notification.title == 'REFRESH_TRIGGER') {
+        _loadNotifications();
+        return;
+      }
+
+      // Refresh all notifications instead of just adding one
+      // This ensures that paid/returned loans are properly excluded
+      _loadNotifications();
     }
   }
 
@@ -81,10 +82,7 @@ class _NotificationWidgetState extends State<NotificationWidget> {
               children: [
                 const Text(
                   'Notifikasi',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 Row(
                   children: [
@@ -122,9 +120,7 @@ class _NotificationWidgetState extends State<NotificationWidget> {
           if (_isLoading)
             const Padding(
               padding: EdgeInsets.all(32),
-              child: Center(
-                child: CircularProgressIndicator(),
-              ),
+              child: Center(child: CircularProgressIndicator()),
             )
           else if (_notifications.isEmpty)
             const Padding(
@@ -140,10 +136,7 @@ class _NotificationWidgetState extends State<NotificationWidget> {
                     SizedBox(height: 8),
                     Text(
                       'Tidak ada notifikasi',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 16,
-                      ),
+                      style: TextStyle(color: Colors.grey, fontSize: 16),
                     ),
                   ],
                 ),
@@ -169,52 +162,34 @@ class _NotificationWidgetState extends State<NotificationWidget> {
 class NotificationTile extends StatelessWidget {
   final NotificationData notification;
 
-  const NotificationTile({
-    Key? key,
-    required this.notification,
-  }) : super(key: key);
+  const NotificationTile({Key? key, required this.notification})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: _getPriorityColor(),
-        child: Icon(
-          _getNotificationIcon(),
-          color: Colors.white,
-          size: 20,
-        ),
+        child: Icon(_getNotificationIcon(), color: Colors.white, size: 20),
       ),
       title: Text(
         notification.title,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-        ),
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
       ),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 4),
-          Text(
-            notification.message,
-            style: const TextStyle(fontSize: 13),
-          ),
+          Text(notification.message, style: const TextStyle(fontSize: 13)),
           const SizedBox(height: 4),
           Text(
             _getTimeText(),
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
           ),
         ],
       ),
       trailing: _getPriorityBadge(),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 8,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       onTap: () {
         _showNotificationDetails(context);
       },
@@ -244,10 +219,7 @@ class NotificationTile extends StatelessWidget {
   Widget? _getPriorityBadge() {
     if (notification.priority == NotificationPriority.high) {
       return Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 6,
-          vertical: 2,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
           color: Colors.red,
           borderRadius: BorderRadius.circular(8),
@@ -267,7 +239,8 @@ class NotificationTile extends StatelessWidget {
 
   String _getTimeText() {
     if (notification.type == NotificationType.dueReminder) {
-      final daysUntilDue = notification.dueDate.difference(DateTime.now()).inDays;
+      final daysUntilDue =
+          notification.dueDate.difference(DateTime.now()).inDays;
       if (daysUntilDue == 1) {
         return 'Jatuh tempo besok';
       } else if (daysUntilDue > 1) {
@@ -285,42 +258,43 @@ class NotificationTile extends StatelessWidget {
   void _showNotificationDetails(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(notification.title),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(notification.message),
-            const SizedBox(height: 16),
-            Text(
-              'Tanggal Jatuh Tempo: ${_formatDate(notification.dueDate)}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            if (notification.overdueDays != null)
-              Text(
-                'Hari Keterlambatan: ${notification.overdueDays} hari',
-                style: const TextStyle(
-                  color: Colors.red,
-                  fontWeight: FontWeight.bold,
+      builder:
+          (context) => AlertDialog(
+            title: Text(notification.title),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(notification.message),
+                const SizedBox(height: 16),
+                Text(
+                  'Tanggal Jatuh Tempo: ${_formatDate(notification.dueDate)}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
+                if (notification.overdueDays != null)
+                  Text(
+                    'Hari Keterlambatan: ${notification.overdueDays} hari',
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Tutup'),
               ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Tutup'),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _navigateToLoanDetails(context);
+                },
+                child: const Text('Lihat Detail'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _navigateToLoanDetails(context);
-            },
-            child: const Text('Lihat Detail'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -366,6 +340,14 @@ class _NotificationBadgeState extends State<NotificationBadge> {
 
   void _onNotificationReceived(NotificationData notification) {
     if (mounted) {
+      // If this is a refresh trigger, just reload the count
+      if (notification.loanId == -1 &&
+          notification.title == 'REFRESH_TRIGGER') {
+        _loadNotificationCount();
+        return;
+      }
+
+      // For normal notifications, reload count
       _loadNotificationCount();
     }
   }
@@ -403,10 +385,7 @@ class _NotificationBadgeState extends State<NotificationBadge> {
                 color: Colors.red,
                 borderRadius: BorderRadius.circular(10),
               ),
-              constraints: const BoxConstraints(
-                minWidth: 16,
-                minHeight: 16,
-              ),
+              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
               child: Text(
                 '$_notificationCount',
                 style: const TextStyle(
@@ -426,36 +405,40 @@ class _NotificationBadgeState extends State<NotificationBadge> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.9,
-        expand: false,
-        builder: (context, scrollController) => Container(
-          decoration: const BoxDecoration(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
+      builder:
+          (context) => DraggableScrollableSheet(
+            initialChildSize: 0.7,
+            minChildSize: 0.5,
+            maxChildSize: 0.9,
+            expand: false,
+            builder:
+                (context, scrollController) => Container(
+                  decoration: const BoxDecoration(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          controller: scrollController,
+                          child: const NotificationWidget(),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  child: const NotificationWidget(),
-                ),
-              ),
-            ],
           ),
-        ),
-      ),
     );
   }
 }

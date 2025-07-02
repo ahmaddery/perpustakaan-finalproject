@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../database/database_helper.dart';
 import '../../models/loan_model.dart';
 import '../../services/payment_service.dart';
-import '../../services/notification_service.dart';
 import 'payment_webview_screen.dart';
 
 class LoanDetailScreen extends StatefulWidget {
@@ -16,7 +15,6 @@ class LoanDetailScreen extends StatefulWidget {
 
 class _LoanDetailScreenState extends State<LoanDetailScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper();
-  final NotificationService _notificationService = NotificationService();
 
   Loan? _loan;
   Map<String, dynamic>? _member;
@@ -478,11 +476,6 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
               await _dbHelper.returnBook(
                 _loan!.loanId!,
                 fineAmount: fineAmount,
-              );
-
-              // Clear notifications for this loan since payment is completed
-              await _notificationService.clearNotificationsForLoan(
-                _loan!.loanId!,
               );
 
               // Show success dialog

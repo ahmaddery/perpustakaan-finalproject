@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../database/database_helper.dart';
 import '../../models/loan_model.dart';
-import '../../models/member_model.dart';
-import '../../models/book_model.dart';
-import '../../models/payment_model.dart';
-import '../../services/book_service.dart';
 import '../../services/payment_service.dart';
+import '../../services/notification_service.dart';
 import 'return_book_dialog.dart';
 import 'create_loan_screen.dart';
+import 'payment_webview_screen.dart';
 
 class LoansScreen extends StatefulWidget {
   const LoansScreen({Key? key}) : super(key: key);
@@ -20,11 +17,17 @@ class LoansScreen extends StatefulWidget {
 class _LoansScreenState extends State<LoansScreen>
     with SingleTickerProviderStateMixin {
   final DatabaseHelper _dbHelper = DatabaseHelper();
+  final NotificationService _notificationService = NotificationService();
   late TabController _tabController;
   List<Loan> _allLoans = [];
   List<Loan> _activeLoans = [];
   List<Loan> _overdueLoans = [];
   bool _isLoading = true;
+
+  // Add flags to prevent multiple payment status checks and track current payment
+  bool _isCheckingPaymentStatus = false;
+  int? _currentPaymentId; // Track which payment is being checked
+
   @override
   void initState() {
     super.initState();
@@ -268,22 +271,8 @@ class _LoansScreenState extends State<LoansScreen>
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Silakan lakukan pembayaran melalui link berikut:',
+                  'Silakan lakukan pembayaran melalui halaman yang akan dibuka:',
                   textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                  child: Text(
-                    invoiceUrl,
-                    style: const TextStyle(fontSize: 12, color: Colors.blue),
-                    textAlign: TextAlign.center,
-                  ),
                 ),
               ],
             ),
@@ -294,27 +283,22 @@ class _LoansScreenState extends State<LoansScreen>
                 },
                 child: const Text('Tutup'),
               ),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  _checkPaymentStatus(paymentId, loan, fineAmount);
-                },
-                child: const Text('Cek Status Pembayaran'),
-              ),
               ElevatedButton(
                 onPressed: () async {
-                  if (await canLaunchUrl(Uri.parse(invoiceUrl))) {
-                    await launchUrl(
-                       Uri.parse(invoiceUrl),
-                       mode: LaunchMode.inAppBrowserView,
-                     );
-                  }
+                  Navigator.of(context).pop();
+                  // Buka WebView dan mulai monitoring pembayaran secara otomatis
+                  _openPaymentPageAndMonitor(
+                    invoiceUrl,
+                    paymentId,
+                    loan,
+                    fineAmount,
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                   foregroundColor: Colors.white,
                 ),
-                child: const Text('Buka Link Pembayaran'),
+                child: const Text('Buka Halaman Pembayaran'),
               ),
             ],
           ),
@@ -326,23 +310,83 @@ class _LoansScreenState extends State<LoansScreen>
     Loan loan,
     double fineAmount,
   ) async {
+    // Prevent multiple instances and check if already checking this specific payment
+    if (_isCheckingPaymentStatus && _currentPaymentId == paymentId) {
+      return; // Already checking this payment, skip
+    }
+
+    _isCheckingPaymentStatus = true;
+    _currentPaymentId = paymentId;
     bool isDialogOpen = true;
+    bool isSuccessDialogShown = false;
+    bool isPollingActive = true;
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder:
           (context) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.payment, color: Colors.blue),
+                SizedBox(width: 8),
+                Expanded(child: Text('Mengecek Pembayaran')),
+              ],
+            ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const CircularProgressIndicator(),
                 const SizedBox(height: 16),
-                const Text('Mengecek status pembayaran...'),
+                Text(
+                  'Sistem sedang mengecek status pembayaran untuk buku: ${loan.bookTitle}',
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 16,
+                            color: Colors.blue.shade700,
+                          ),
+                          const SizedBox(width: 6),
+                          const Expanded(
+                            child: Text(
+                              'Status akan diperbarui otomatis',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Jika Anda telah menyelesaikan pembayaran, silakan tunggu beberapa saat untuk konfirmasi.',
+                        style: TextStyle(fontSize: 11, color: Colors.grey),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
                 TextButton(
                   onPressed: () {
                     isDialogOpen = false;
+                    isPollingActive = false;
+                    _isCheckingPaymentStatus = false; // Reset flag
+                    _currentPaymentId = null; // Clear current payment
                     Navigator.of(context).pop();
                   },
                   child: const Text('Batal'),
@@ -352,11 +396,14 @@ class _LoansScreenState extends State<LoansScreen>
           ),
     ).then((_) {
       isDialogOpen = false;
+      isPollingActive = false;
+      _isCheckingPaymentStatus = false; // Reset flag when dialog closes
+      _currentPaymentId = null; // Clear current payment
     });
 
     try {
       // Poll payment status every 3 seconds until paid or cancelled
-      while (isDialogOpen) {
+      while (isPollingActive && mounted) {
         final paymentResponse = await PaymentService.getPaymentDetails(
           paymentId,
         );
@@ -365,186 +412,191 @@ class _LoansScreenState extends State<LoansScreen>
           final paymentData = paymentResponse['data'];
           final status = paymentData['status'];
 
-          if (status == 'paid') {
-            // Payment completed, close dialog and return the book
+          if (status == 'paid' && !isSuccessDialogShown && isPollingActive) {
+            isSuccessDialogShown = true;
+            isPollingActive = false; // Stop polling immediately
+
+            // Payment completed, close loading dialog first
             if (isDialogOpen) {
               isDialogOpen = false;
               Navigator.of(context).pop(); // Close loading dialog
             }
 
-            // Show success popup
-            await showDialog(
-              context: context,
-              builder:
-                  (context) => AlertDialog(
-                    title: const Row(
-                      children: [
-                        Icon(Icons.check_circle, color: Colors.green, size: 28),
-                        SizedBox(width: 8),
-                        Text('Pembayaran Berhasil!'),
-                      ],
+            // Wait for dialog to close properly
+            await Future.delayed(const Duration(milliseconds: 800));
+
+            if (mounted) {
+              // Process return book first
+              await _dbHelper.returnBook(loan.loanId!, fineAmount: fineAmount);
+
+              // Clear notifications for this loan since payment is completed
+              await _notificationService.clearNotificationsForLoan(
+                loan.loanId!,
+              );
+
+              // Show success dialog
+              await _showPaymentSuccessDialog(loan, paymentData, fineAmount);
+
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Pembayaran berhasil! Buku telah dikembalikan.',
                     ),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Pembayaran denda untuk buku "${loan.bookTitle}" telah berhasil diproses.',
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey[300]!),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.payment,
-                                    size: 16,
-                                    color: Colors.blue,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  const Text(
-                                    'Detail Pembayaran:',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Jumlah Dibayar: ${_formatCurrency(double.tryParse(paymentData['paid_amount']?.toString() ?? '0') ?? fineAmount * 1000)}',
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Metode Pembayaran: ${paymentData['payment_channel'] ?? 'Online Payment'}',
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'ID Transaksi: ${paymentData['external_id'] ?? paymentData['id']}',
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Mata Uang: ${paymentData['currency'] ?? 'IDR'}',
-                              ),
-                              if (paymentData['paid_at'] != null) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Waktu Pembayaran: ${_formatDateTime(paymentData['paid_at'])}',
-                                ),
-                              ],
-                              if (paymentData['payment_destination'] !=
-                                  null) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Tujuan Pembayaran: ${paymentData['payment_destination']}',
-                                ),
-                              ],
-                              if (paymentData['bank_code'] != null) ...[
-                                const SizedBox(height: 4),
-                                Text('Kode Bank: ${paymentData['bank_code']}'),
-                              ],
-                              if (paymentData['payment_progress'] != null) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Progress: ${paymentData['payment_progress']}%',
-                                ),
-                              ],
-                              if (paymentData['description'] != null) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Deskripsi: ${paymentData['description']}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.check_circle_outline,
-                              size: 16,
-                              color: Colors.green,
-                            ),
-                            const SizedBox(width: 6),
-                            const Expanded(
-                              child: Text(
-                                'Buku telah dikembalikan ke perpustakaan.',
-                                style: TextStyle(
-                                  color: Colors.green,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('OK'),
-                      ),
-                    ],
+                    backgroundColor: Colors.green,
                   ),
-            );
-
-            await _dbHelper.returnBook(loan.loanId!, fineAmount: fineAmount);
-
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Pembayaran berhasil! Buku telah dikembalikan.'),
-                backgroundColor: Colors.green,
-              ),
-            );
-
-            _loadLoans();
-            return;
+                );
+                _loadLoans();
+              }
+            }
+            _isCheckingPaymentStatus = false; // Reset flag
+            _currentPaymentId = null; // Clear current payment
+            return; // Exit function completely
           } else if (status == 'expired' || status == 'failed') {
             // Payment failed or expired
+            isPollingActive = false;
+            _isCheckingPaymentStatus = false; // Reset flag
+            _currentPaymentId = null; // Clear current payment
             if (isDialogOpen) {
               isDialogOpen = false;
               Navigator.of(context).pop(); // Close loading dialog
             }
 
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Pembayaran $status. Silakan coba lagi.'),
-                backgroundColor: Colors.red,
-              ),
-            );
-            return;
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Pembayaran $status. Silakan coba lagi.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+            return; // Exit function completely
           }
-          // If status is still 'pending', continue polling
+          // If status is still 'pending', continue polling only if still active
         }
 
-        // Wait 3 seconds before next check
-        await Future.delayed(const Duration(seconds: 3));
+        // Wait 3 seconds before next check, but only if still active
+        if (isPollingActive) {
+          await Future.delayed(const Duration(seconds: 3));
+        }
       }
     } catch (e) {
-      if (isDialogOpen) {
+      isPollingActive = false;
+      _isCheckingPaymentStatus = false; // Reset flag
+      _currentPaymentId = null; // Clear current payment
+      if (isDialogOpen && mounted) {
         isDialogOpen = false;
         Navigator.of(context).pop(); // Close loading dialog
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error checking payment status: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error checking payment status: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+
+    // Reset flag at the end
+    _isCheckingPaymentStatus = false;
+    _currentPaymentId = null;
+  }
+
+  Future<void> _openPaymentPageAndMonitor(
+    String invoiceUrl,
+    int paymentId,
+    Loan loan,
+    double fineAmount,
+  ) async {
+    // Buka WebView screen
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (context) => PaymentWebViewScreen(
+              paymentUrl: invoiceUrl,
+              bookTitle: loan.bookTitle ?? 'Unknown Book',
+              fineAmount: fineAmount,
+              onPaymentCompleted: () {
+                // Callback ini akan dipanggil jika pembayaran berhasil terdeteksi di WebView
+                Navigator.of(context).pop('payment_completed');
+              },
+            ),
+      ),
+    );
+
+    // Handle berbagai hasil dari WebView
+    if (result == 'payment_completed') {
+      // Pembayaran terdeteksi sukses di WebView, langsung cek status
+      // Add delay to prevent immediate multiple calls
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted && !_isCheckingPaymentStatus) {
+        _checkPaymentStatus(paymentId, loan, fineAmount);
+      }
+    } else if (result == 'check_payment') {
+      // User menekan tombol "Saya Sudah Bayar, Cek Status"
+      if (mounted && !_isCheckingPaymentStatus) {
+        _showAutoCheckPaymentDialog(paymentId, loan, fineAmount);
+      }
+    } else {
+      // User kembali tanpa indikasi pembayaran, tawarkan cek manual
+      if (mounted) {
+        _showPaymentReturnDialog(paymentId, loan, fineAmount);
+      }
+    }
+  }
+
+  void _showPaymentReturnDialog(int paymentId, Loan loan, double fineAmount) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Pembayaran'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.help_outline, size: 48, color: Colors.orange),
+                const SizedBox(height: 16),
+                Text(
+                  'Apakah Anda sudah menyelesaikan pembayaran untuk buku: ${loan.bookTitle}?',
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Belum'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _showAutoCheckPaymentDialog(paymentId, loan, fineAmount);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Sudah, Cek Status'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _showAutoCheckPaymentDialog(
+    int paymentId,
+    Loan loan,
+    double fineAmount,
+  ) {
+    // Langsung mulai checking tanpa dialog tambahan
+    // karena _checkPaymentStatus sudah menampilkan dialog sendiri
+    // Only start if not already checking this payment
+    if (!_isCheckingPaymentStatus || _currentPaymentId != paymentId) {
+      _checkPaymentStatus(paymentId, loan, fineAmount);
     }
   }
 
@@ -954,6 +1006,7 @@ class _LoansScreenState extends State<LoansScreen>
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddLoanDialog,
         backgroundColor: Colors.blue.shade700,
+        heroTag: "add_loan_fab", // Unique hero tag
         icon: const Icon(Icons.add),
         label: const Text('Buat Peminjaman'),
         elevation: 4,
@@ -993,5 +1046,148 @@ class _LoansScreenState extends State<LoansScreen>
         ],
       ),
     );
+  }
+
+  Future<void> _showPaymentSuccessDialog(
+    Loan loan,
+    Map<String, dynamic> paymentData,
+    double fineAmount,
+  ) async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green, size: 28),
+                SizedBox(width: 8),
+                Expanded(child: Text('Pembayaran Berhasil!')),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Pembayaran denda untuk buku "${loan.bookTitle}" telah berhasil diproses.',
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.payment,
+                              size: 16,
+                              color: Colors.blue,
+                            ),
+                            const SizedBox(width: 6),
+                            const Text(
+                              'Detail Pembayaran:',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Jumlah Dibayar: ${_formatCurrency(double.tryParse(paymentData['paid_amount']?.toString() ?? '0') ?? fineAmount * 1000)}',
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Metode Pembayaran: ${paymentData['payment_channel'] ?? 'Online Payment'}',
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'ID Transaksi: ${paymentData['external_id'] ?? paymentData['id']}',
+                        ),
+                        const SizedBox(height: 4),
+                        Text('Mata Uang: ${paymentData['currency'] ?? 'IDR'}'),
+                        if (paymentData['paid_at'] != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Waktu Pembayaran: ${_formatDateTime(paymentData['paid_at'])}',
+                          ),
+                        ],
+                        if (paymentData['payment_destination'] != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Tujuan Pembayaran: ${paymentData['payment_destination']}',
+                          ),
+                        ],
+                        if (paymentData['bank_code'] != null) ...[
+                          const SizedBox(height: 4),
+                          Text('Kode Bank: ${paymentData['bank_code']}'),
+                        ],
+                        if (paymentData['payment_progress'] != null) ...[
+                          const SizedBox(height: 4),
+                          Text('Progress: ${paymentData['payment_progress']}%'),
+                        ],
+                        if (paymentData['description'] != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Deskripsi: ${paymentData['description']}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.check_circle_outline,
+                        size: 16,
+                        color: Colors.green,
+                      ),
+                      const SizedBox(width: 6),
+                      const Expanded(
+                        child: Text(
+                          'Buku telah dikembalikan ke perpustakaan.',
+                          style: TextStyle(
+                            color: Colors.green,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  // Ensure flags are reset when dialog is dismissed
+                  _isCheckingPaymentStatus = false;
+                  _currentPaymentId = null;
+                  Navigator.of(context).pop();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+    );
+
+    // Also reset flags after dialog is complete
+    _isCheckingPaymentStatus = false;
+    _currentPaymentId = null;
   }
 }
