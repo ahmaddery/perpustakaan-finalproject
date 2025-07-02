@@ -203,7 +203,7 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Jumlah Denda: ${_formatCurrency(widget.fineAmount * 1000)}',
+                        'Jumlah Denda: ${_formatCurrency(widget.fineAmount)}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/session_manager.dart';
 import '../../services/notification_service.dart';
-import '../../widgets/notification_badge.dart';
 import '../../widgets/custom_bottom_nav.dart';
-import 'home_screen.dart';
 import '../books/books_screen.dart';
 import 'settings_screen.dart';
 import '../auth/login_screen.dart';
@@ -11,6 +9,8 @@ import '../members/members_screen.dart';
 import '../loans/loans_screen.dart';
 import '../books/books_management_screen.dart';
 import 'notifications_screen.dart';
+import 'analytics_screen.dart';
+import '../payment_history_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -56,15 +56,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Keluar'),
-          content: const Text(
-            'Apakah Anda yakin ingin keluar?',
-          ),
+          content: const Text('Apakah Anda yakin ingin keluar?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text(
-                'Batal',
-              ),
+              child: const Text('Batal'),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -82,9 +78,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
               ),
-              child: const Text(
-                'Keluar',
-              ),
+              child: const Text('Keluar'),
             ),
           ],
         );
@@ -98,9 +92,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     const MembersScreen(),
     const LoansScreen(),
     const NotificationsScreen(),
-    SettingsScreenWithLogout(
-      onLogout: _logout,
-    ),
+    SettingsScreenWithLogout(onLogout: _logout),
   ];
 
   @override
@@ -170,10 +162,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         title: const Text(
           'Dashboard',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: Colors.blue[600],
         elevation: 0,
@@ -250,7 +239,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                (_currentUser!['role'] ?? 'user').toString().toUpperCase(),
+                                (_currentUser!['role'] ?? 'user')
+                                    .toString()
+                                    .toUpperCase(),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
@@ -330,15 +321,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 _buildActionCard(
                   icon: Icons.analytics,
-                  title: 'Laporan',
-                  subtitle: 'Laporan perpustakaan',
+                  title: 'Laporan Analytics',
+                  subtitle: 'Statistik perpustakaan',
                   color: Colors.indigo,
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Fitur sedang dalam pengembangan',
-                        ),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AnalyticsScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _buildActionCard(
+                  icon: Icons.payment,
+                  title: 'Riwayat Pembayaran',
+                  subtitle: 'History transaksi',
+                  color: Colors.purple,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PaymentHistoryScreen(),
                       ),
                     );
                   },
@@ -408,10 +412,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 class SettingsScreenWithLogout extends StatelessWidget {
   final VoidCallback onLogout;
 
-  const SettingsScreenWithLogout({
-    super.key,
-    required this.onLogout,
-  });
+  const SettingsScreenWithLogout({super.key, required this.onLogout});
 
   @override
   Widget build(BuildContext context) {
@@ -420,10 +421,7 @@ class SettingsScreenWithLogout extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           'Pengaturan',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: Colors.blue[600],
         elevation: 0,

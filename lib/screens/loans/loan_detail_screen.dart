@@ -606,7 +606,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Jumlah Dibayar: ${_formatCurrency(double.tryParse(paymentData['paid_amount']?.toString() ?? '0') ?? fineAmount * 1000)}',
+                          'Jumlah Dibayar: ${_formatCurrency(double.tryParse(paymentData['paid_amount']?.toString() ?? '0') ?? fineAmount)}',
                         ),
                         const SizedBox(height: 4),
                         Text(

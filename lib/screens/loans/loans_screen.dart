@@ -197,7 +197,7 @@ class _LoansScreenState extends State<LoansScreen>
       // Create payment via Xendit API
       final paymentResponse = await PaymentService.createPayment(
         userId: 1, // You should get this from session/auth
-        amount: fineAmount * 1000, // Convert to Rupiah (assuming $1 = Rp 1000)
+        amount: fineAmount, // fineAmount already in Rupiah (daysOverdue * 1000)
         payerEmail: loan.memberEmail ?? 'member@example.com',
         description: 'Pembayaran denda keterlambatan buku: ${loan.bookTitle}',
         loanId: loan.loanId,
@@ -262,7 +262,7 @@ class _LoansScreenState extends State<LoansScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Jumlah: ${_formatCurrency(fineAmount * 1000)}',
+                  'Jumlah: ${_formatCurrency(fineAmount)}',
                   style: const TextStyle(
                     fontSize: 16,
                     color: Colors.red,
@@ -811,7 +811,7 @@ class _LoansScreenState extends State<LoansScreen>
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      'Denda: ${_formatCurrency(loan.fineAmount * 1000)}',
+                                      'Denda: ${_formatCurrency(loan.fineAmount)}',
                                       style: const TextStyle(
                                         color: Colors.red,
                                         fontWeight: FontWeight.bold,
@@ -903,9 +903,12 @@ class _LoansScreenState extends State<LoansScreen>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const SizedBox(
-                      width: 48,
-                    ), // Placeholder to maintain spacing
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                    ),
                     const Text(
                       'Peminjaman',
                       style: TextStyle(
@@ -1100,7 +1103,7 @@ class _LoansScreenState extends State<LoansScreen>
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Jumlah Dibayar: ${_formatCurrency(double.tryParse(paymentData['paid_amount']?.toString() ?? '0') ?? fineAmount * 1000)}',
+                          'Jumlah Dibayar: ${_formatCurrency(double.tryParse(paymentData['paid_amount']?.toString() ?? '0') ?? fineAmount)}',
                         ),
                         const SizedBox(height: 4),
                         Text(

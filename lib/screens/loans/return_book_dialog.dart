@@ -5,11 +5,8 @@ class ReturnBookDialog extends StatefulWidget {
   final Loan loan;
   final Function(double? fineAmount) onReturn;
 
-  const ReturnBookDialog({
-    Key? key,
-    required this.loan,
-    required this.onReturn,
-  }) : super(key: key);
+  const ReturnBookDialog({Key? key, required this.loan, required this.onReturn})
+    : super(key: key);
 
   @override
   State<ReturnBookDialog> createState() => _ReturnBookDialogState();
@@ -29,16 +26,14 @@ class _ReturnBookDialogState extends State<ReturnBookDialog> {
   void _calculateFine() {
     if (widget.loan.isOverdue) {
       // Calculate fine: Rp 1000 per day overdue
-      _calculatedFine = widget.loan.daysOverdue * 1000.0; // Direct Rupiah calculation
+      _calculatedFine =
+          widget.loan.daysOverdue * 1000.0; // Direct Rupiah calculation
       _fineController.text = _formatRupiah(_calculatedFine);
     }
   }
 
   String _formatRupiah(double amount) {
-    return 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]}.',
-    )}';
+    return 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
   }
 
   double _parseRupiah(String text) {
@@ -80,7 +75,10 @@ class _ReturnBookDialogState extends State<ReturnBookDialog> {
                       Expanded(
                         child: Text(
                           widget.loan.bookTitle ?? 'Unknown Book',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -100,7 +98,11 @@ class _ReturnBookDialogState extends State<ReturnBookDialog> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(Icons.calendar_today, color: Colors.blue.shade700, size: 20),
+                      Icon(
+                        Icons.calendar_today,
+                        color: Colors.blue.shade700,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Jatuh Tempo: ${widget.loan.dueDate.day}/${widget.loan.dueDate.month}/${widget.loan.dueDate.year}',
@@ -111,9 +113,8 @@ class _ReturnBookDialogState extends State<ReturnBookDialog> {
                 ],
               ),
             ),
-            
-            if (widget.loan.isOverdue) ...
-            [
+
+            if (widget.loan.isOverdue) ...[
               const SizedBox(height: 24),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -124,7 +125,10 @@ class _ReturnBookDialogState extends State<ReturnBookDialog> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.warning_amber_rounded, color: Colors.red.shade700),
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      color: Colors.red.shade700,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -161,18 +165,24 @@ class _ReturnBookDialogState extends State<ReturnBookDialog> {
                 controller: _fineController,
                 decoration: InputDecoration(
                   labelText: 'Jumlah Denda',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   helperText: 'Pembayaran akan diproses melalui Xendit',
                   prefixText: 'Rp ',
                   filled: true,
-                  fillColor: _isManualInput ? Colors.white : Colors.grey.shade100,
+                  fillColor:
+                      _isManualInput ? Colors.white : Colors.grey.shade100,
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(color: Colors.blue.shade200),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.blue.shade500, width: 2),
+                    borderSide: BorderSide(
+                      color: Colors.blue.shade500,
+                      width: 2,
+                    ),
                   ),
                 ),
                 keyboardType: TextInputType.number,
@@ -186,7 +196,9 @@ class _ReturnBookDialogState extends State<ReturnBookDialog> {
                       String formatted = _formatRupiah(amount);
                       _fineController.value = TextEditingValue(
                         text: formatted,
-                        selection: TextSelection.collapsed(offset: formatted.length),
+                        selection: TextSelection.collapsed(
+                          offset: formatted.length,
+                        ),
                       );
                     }
                   }
@@ -223,9 +235,7 @@ class _ReturnBookDialogState extends State<ReturnBookDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.grey.shade700,
-          ),
+          style: TextButton.styleFrom(foregroundColor: Colors.grey.shade700),
           child: const Text('Batal'),
         ),
         ElevatedButton.icon(
@@ -235,9 +245,11 @@ class _ReturnBookDialogState extends State<ReturnBookDialog> {
             double? fineAmount;
             if (_fineController.text.isNotEmpty) {
               if (_isManualInput) {
-                fineAmount = _parseRupiah(_fineController.text) / 1000; // Convert back to USD for payment processing
+                fineAmount = _parseRupiah(
+                  _fineController.text,
+                ); // Keep in Rupiah format
               } else {
-                fineAmount = _calculatedFine / 1000; // Convert back to USD for payment processing
+                fineAmount = _calculatedFine; // Keep in Rupiah format
               }
             }
             widget.onReturn(fineAmount);
@@ -247,7 +259,9 @@ class _ReturnBookDialogState extends State<ReturnBookDialog> {
             backgroundColor: Colors.green,
             foregroundColor: Colors.white,
             elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
         ),
       ],
