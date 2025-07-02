@@ -17,6 +17,9 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
   bool _isInitialized = false;
 
+  // Store dismissed notification IDs to temporarily hide them
+  final Set<int> _dismissedNotifications = <int>{};
+
   // Initialize push notifications
   Future<void> _initializeNotifications() async {
     if (_isInitialized) return;
@@ -263,6 +266,13 @@ class NotificationService {
     final loans = await _dbHelper.getActiveLoans();
 
     for (final loan in loans) {
+      final loanId = loan['loan_id'];
+
+      // Skip if notification was dismissed
+      if (_dismissedNotifications.contains(loanId)) {
+        continue;
+      }
+
       final dueDate = DateTime.parse(loan['due_date']);
       final daysUntilDue = dueDate.difference(now).inDays;
 
@@ -277,7 +287,7 @@ class NotificationService {
               title: 'Pengingat Jatuh Tempo',
               message:
                   'Buku "${book['title']}" yang dipinjam oleh ${member['full_name']} akan jatuh tempo dalam $daysUntilDue hari.',
-              loanId: loan['loan_id'],
+              loanId: loanId,
               memberId: loan['member_id'],
               bookId: loan['book_id'],
               dueDate: dueDate,
@@ -295,6 +305,13 @@ class NotificationService {
     final overdueLoans = await _dbHelper.getOverdueLoans();
 
     for (final loan in overdueLoans) {
+      final loanId = loan['loan_id'];
+
+      // Skip if notification was dismissed
+      if (_dismissedNotifications.contains(loanId)) {
+        continue;
+      }
+
       final member = await _dbHelper.getMemberById(loan['member_id']);
       final book = await _dbHelper.getBookById(loan['book_id']);
 
@@ -308,7 +325,7 @@ class NotificationService {
             title: 'Keterlambatan Pengembalian',
             message:
                 'Buku "${book['title']}" yang dipinjam oleh ${member['full_name']} sudah terlambat $overdueDays hari.',
-            loanId: loan['loan_id'],
+            loanId: loanId,
             memberId: loan['member_id'],
             bookId: loan['book_id'],
             dueDate: dueDate,
@@ -387,6 +404,36 @@ class NotificationService {
   // Manual check for notifications (for testing or immediate check)
   Future<void> checkNotificationsNow() async {
     await _checkNotifications();
+  }
+
+  // Dismiss a specific notification temporarily
+  Future<void> dismissNotification(int loanId) async {
+    try {
+      // Add to dismissed list
+      _dismissedNotifications.add(loanId);
+
+      // Clear push notification for this loan
+      await _flutterLocalNotificationsPlugin.cancel(loanId);
+
+      // Force refresh all listeners to update their notification counts
+      await refreshAllListeners();
+
+      print('Notification dismissed for loan ID: $loanId');
+    } catch (e) {
+      print('Error dismissing notification for loan $loanId: $e');
+    }
+  }
+
+  // Restore a specific dismissed notification
+  Future<void> restoreNotification(int loanId) async {
+    _dismissedNotifications.remove(loanId);
+    await refreshAllListeners();
+  }
+
+  // Clear all dismissed notifications (reset dismissed state)
+  Future<void> clearDismissedNotifications() async {
+    _dismissedNotifications.clear();
+    await refreshAllListeners();
   }
 }
 

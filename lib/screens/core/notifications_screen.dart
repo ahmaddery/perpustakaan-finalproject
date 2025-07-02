@@ -60,12 +60,89 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     await _loadNotifications();
   }
 
+  Future<void> _clearAllNotifications() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Hapus Semua Notifikasi'),
+            content: const Text(
+              'Apakah Anda yakin ingin menghapus semua notifikasi? '
+              'Notifikasi akan muncul kembali saat jadwal pengecekan berikutnya.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Hapus Semua'),
+              ),
+            ],
+          ),
+    );
+
+    if (confirmed == true) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      // Clear all notifications by dismissing each one
+      for (final notification in _notifications) {
+        await _notificationService.dismissNotification(notification.loanId);
+      }
+
+      // Show feedback
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Semua notifikasi telah dihapus'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      await _loadNotifications();
+    }
+  }
+
+  Future<void> _dismissNotification(NotificationData notification) async {
+    await _notificationService.dismissNotification(notification.loanId);
+
+    // Show feedback with undo option
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Notifikasi telah dihapus'),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 3),
+        action: SnackBarAction(
+          label: 'Urungkan',
+          textColor: Colors.white,
+          onPressed: () async {
+            await _notificationService.restoreNotification(notification.loanId);
+            await _loadNotifications();
+          },
+        ),
+      ),
+    );
+
+    await _loadNotifications();
+  }
+
   List<NotificationData> get _filteredNotifications {
     switch (_selectedFilter) {
       case 'due_reminder':
-        return _notifications.where((n) => n.type == NotificationType.dueReminder).toList();
+        return _notifications
+            .where((n) => n.type == NotificationType.dueReminder)
+            .toList();
       case 'overdue':
-        return _notifications.where((n) => n.type == NotificationType.overdue).toList();
+        return _notifications
+            .where((n) => n.type == NotificationType.overdue)
+            .toList();
       default:
         return _notifications;
     }
@@ -75,9 +152,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Notifikasi',
-          style: TextStyle(
+        title: Text(
+          _filteredNotifications.isEmpty
+              ? 'Notifikasi'
+              : 'Notifikasi (${_filteredNotifications.length})',
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -89,8 +168,30 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _refreshNotifications,
-            tooltip: 'Refresh Notifikasi',
+            tooltip: 'Perbarui Notifikasi',
           ),
+          if (_filteredNotifications.isNotEmpty)
+            PopupMenuButton<String>(
+              onSelected: (value) async {
+                if (value == 'clear_all') {
+                  await _clearAllNotifications();
+                }
+              },
+              itemBuilder:
+                  (context) => [
+                    const PopupMenuItem(
+                      value: 'clear_all',
+                      child: Row(
+                        children: [
+                          Icon(Icons.clear_all, size: 20),
+                          SizedBox(width: 8),
+                          Text('Hapus Semua'),
+                        ],
+                      ),
+                    ),
+                  ],
+              icon: const Icon(Icons.more_vert),
+            ),
         ],
       ),
       body: Column(
@@ -101,21 +202,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Expanded(
-                  child: _buildFilterButton('all', 'Semua'),
-                ),
+                Expanded(child: _buildFilterButton('all', 'Semua')),
                 const SizedBox(width: 8),
                 Expanded(
                   child: _buildFilterButton('due_reminder', 'Jatuh Tempo'),
                 ),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: _buildFilterButton('overdue', 'Terlambat'),
-                ),
+                Expanded(child: _buildFilterButton('overdue', 'Terlambat')),
               ],
             ),
           ),
-          
+
           // Notification Count
           if (_filteredNotifications.isNotEmpty)
             Container(
@@ -130,27 +227,31 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
               ),
             ),
-          
+
           // Notifications List
           Expanded(
-            child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(),
-                  )
-                : _filteredNotifications.isEmpty
+            child:
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _filteredNotifications.isEmpty
                     ? _buildEmptyState()
                     : RefreshIndicator(
-                        onRefresh: _refreshNotifications,
-                        child: ListView.separated(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _filteredNotifications.length,
-                          separatorBuilder: (context, index) => const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final notification = _filteredNotifications[index];
-                            return NotificationCard(notification: notification);
-                          },
-                        ),
+                      onRefresh: _refreshNotifications,
+                      child: ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _filteredNotifications.length,
+                        separatorBuilder:
+                            (context, index) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final notification = _filteredNotifications[index];
+                          return NotificationCard(
+                            notification: notification,
+                            onDismissed:
+                                () => _dismissNotification(notification),
+                          );
+                        },
                       ),
+                    ),
           ),
         ],
       ),
@@ -160,7 +261,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget _buildEmptyState() {
     String message;
     IconData icon;
-    
+
     switch (_selectedFilter) {
       case 'due_reminder':
         message = 'Tidak ada pengingat jatuh tempo';
@@ -174,16 +275,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         message = 'Tidak ada notifikasi';
         icon = Icons.notifications_none;
     }
-    
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            size: 64,
-            color: Colors.grey[400],
-          ),
+          Icon(icon, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             message,
@@ -196,10 +293,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           const SizedBox(height: 8),
           Text(
             'Tarik ke bawah untuk memperbarui',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
           ),
         ],
       ),
@@ -218,9 +312,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         backgroundColor: isSelected ? Colors.white : Colors.blue[700],
         foregroundColor: isSelected ? Colors.blue[600] : Colors.white,
         elevation: isSelected ? 2 : 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         padding: const EdgeInsets.symmetric(vertical: 8),
       ),
       child: Text(
@@ -236,10 +328,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
 class NotificationCard extends StatelessWidget {
   final NotificationData notification;
+  final VoidCallback onDismissed;
 
   const NotificationCard({
     Key? key,
     required this.notification,
+    required this.onDismissed,
   }) : super(key: key);
 
   @override
@@ -248,104 +342,143 @@ class NotificationCard extends StatelessWidget {
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: _getPriorityColor().withOpacity(0.3),
-          width: 1,
-        ),
+        side: BorderSide(color: _getPriorityColor().withOpacity(0.3), width: 1),
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => _showNotificationDetails(context),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: _getPriorityColor().withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      _getNotificationIcon(),
-                      color: _getPriorityColor(),
-                      size: 20,
-                    ),
+      child: Dismissible(
+        key: Key('notification_${notification.loanId}'),
+        direction: DismissDirection.endToStart,
+        confirmDismiss: (direction) async {
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder:
+                (context) => AlertDialog(
+                  title: const Text('Hapus Notifikasi'),
+                  content: const Text(
+                    'Apakah Anda yakin ingin menghapus notifikasi ini?',
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          notification.title,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        Text(
-                          _getTimeText(),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text('Batal'),
                     ),
-                  ),
-                  if (notification.priority == NotificationPriority.high)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
                       ),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Text(
-                        'URGENT',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: const Text('Hapus'),
                     ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                notification.message,
-                style: const TextStyle(
-                  fontSize: 14,
-                  height: 1.4,
+                  ],
                 ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(
-                    Icons.calendar_today,
-                    size: 14,
-                    color: Colors.grey[600],
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Jatuh tempo: ${_formatDate(notification.dueDate)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w500,
+          );
+          return confirmed ?? false;
+        },
+        onDismissed: (direction) {
+          onDismissed();
+        },
+        background: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.red,
+          ),
+          alignment: Alignment.centerRight,
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Icon(Icons.delete, color: Colors.white, size: 24),
+          ),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _showNotificationDetails(context),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _getPriorityColor().withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        _getNotificationIcon(),
+                        color: _getPriorityColor(),
+                        size: 20,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            notification.title,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            _getTimeText(),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (notification.priority == NotificationPriority.high)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'MENDESAK',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  notification.message,
+                  style: const TextStyle(fontSize: 14, height: 1.4),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      size: 14,
+                      color: Colors.grey[600],
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Jatuh tempo: ${_formatDate(notification.dueDate)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -374,7 +507,8 @@ class NotificationCard extends StatelessWidget {
 
   String _getTimeText() {
     if (notification.type == NotificationType.dueReminder) {
-      final daysUntilDue = notification.dueDate.difference(DateTime.now()).inDays;
+      final daysUntilDue =
+          notification.dueDate.difference(DateTime.now()).inDays;
       if (daysUntilDue == 1) {
         return 'Jatuh tempo besok';
       } else if (daysUntilDue > 1) {
@@ -396,105 +530,107 @@ class NotificationCard extends StatelessWidget {
   void _showNotificationDetails(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              _getNotificationIcon(),
-              color: _getPriorityColor(),
+      builder:
+          (context) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(_getNotificationIcon(), color: _getPriorityColor()),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    notification.title,
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                notification.title,
-                style: const TextStyle(fontSize: 18),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              notification.message,
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  notification.message,
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.calendar_today, size: 16),
-                      const SizedBox(width: 8),
+                      Row(
+                        children: [
+                          const Icon(Icons.calendar_today, size: 16),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Tanggal Jatuh Tempo',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
                       Text(
-                        'Tanggal Jatuh Tempo',
-                        style: TextStyle(
+                        _formatDate(notification.dueDate),
+                        style: const TextStyle(
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.grey[700],
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formatDate(notification.dueDate),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (notification.overdueDays != null) ...[
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        const Icon(Icons.warning, size: 16, color: Colors.red),
-                        const SizedBox(width: 8),
+                      if (notification.overdueDays != null) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.warning,
+                              size: 16,
+                              color: Colors.red,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Hari Keterlambatan',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
                         Text(
-                          'Hari Keterlambatan',
-                          style: TextStyle(
+                          '${notification.overdueDays} hari',
+                          style: const TextStyle(
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Colors.grey[700],
+                            color: Colors.red,
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${notification.overdueDays} hari',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Tutup'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Tutup'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _navigateToLoanDetails(context);
+                },
+                child: const Text('Lihat Detail'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _navigateToLoanDetails(context);
-            },
-            child: const Text('Lihat Detail'),
-          ),
-        ],
-      ),
     );
   }
 
