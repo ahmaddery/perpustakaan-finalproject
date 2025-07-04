@@ -106,18 +106,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: Text(
           'Laporan Analytics',
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onPrimary,
           ),
         ),
-        backgroundColor: Colors.indigo[600],
+        backgroundColor: Theme.of(context).colorScheme.primary,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
       ),
       body:
           _isLoading
@@ -159,7 +159,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           'Ringkasan',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
-            color: Colors.grey[800],
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 16),
@@ -209,11 +209,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 2),
@@ -234,12 +234,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           const SizedBox(height: 12),
           Text(
             value,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 24, 
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             title,
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            style: TextStyle(
+              fontSize: 12, 
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -255,7 +262,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           'Statistik Peminjaman',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
-            color: Colors.grey[800],
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 16),
@@ -263,11 +270,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
                 spreadRadius: 1,
                 blurRadius: 5,
                 offset: const Offset(0, 2),
@@ -279,9 +286,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             children: [
               Text(
                 'Peminjaman 7 Hari Terakhir',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 16),
@@ -292,19 +300,22 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(_formatDate(loan['date'])),
+                        Text(
+                          _formatDate(loan['date']),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                        ),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.1),
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             '${loan['count']} peminjaman',
-                            style: TextStyle(color: Colors.blue[700]),
+                            style: TextStyle(color: Theme.of(context).colorScheme.primary),
                           ),
                         ),
                       ],
@@ -314,7 +325,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               else
                 Text(
                   'Tidak ada data peminjaman',
-                  style: TextStyle(color: Colors.grey[600]),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                 ),
             ],
           ),
@@ -331,7 +342,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           'Buku Paling Populer',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
-            color: Colors.grey[800],
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 16),
@@ -339,11 +350,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
                 spreadRadius: 1,
                 blurRadius: 5,
                 offset: const Offset(0, 2),
@@ -362,7 +373,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.grey[50],
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -391,14 +402,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             children: [
                               Text(
                                 book['title'] ?? 'Unknown Title',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.onSurface,
                                 ),
                               ),
                               Text(
                                 book['author'] ?? 'Unknown Author',
                                 style: TextStyle(
-                                  color: Colors.grey[600],
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                   fontSize: 12,
                                 ),
                               ),
@@ -411,12 +423,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.1),
+                            color: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             '${book['loan_count']} kali',
-                            style: TextStyle(color: Colors.green[700]),
+                            style: TextStyle(color: Theme.of(context).colorScheme.secondary),
                           ),
                         ),
                       ],
@@ -426,7 +438,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               else
                 Text(
                   'Tidak ada data buku populer',
-                  style: TextStyle(color: Colors.grey[600]),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                 ),
             ],
           ),
@@ -443,7 +455,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           'Member Paling Aktif',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
-            color: Colors.grey[800],
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 16),
@@ -474,7 +486,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.grey[50],
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -503,14 +515,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             children: [
                               Text(
                                 member['full_name'] ?? 'Unknown Member',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.onSurface,
                                 ),
                               ),
                               Text(
                                 member['email'] ?? 'No email',
                                 style: TextStyle(
-                                  color: Colors.grey[600],
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                   fontSize: 12,
                                 ),
                               ),
@@ -523,12 +536,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.teal.withOpacity(0.1),
+                            color: Theme.of(context).colorScheme.tertiary.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             '${member['loan_count']} peminjaman',
-                            style: TextStyle(color: Colors.teal[700]),
+                            style: TextStyle(color: Theme.of(context).colorScheme.tertiary),
                           ),
                         ),
                       ],
@@ -538,7 +551,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               else
                 Text(
                   'Tidak ada data member aktif',
-                  style: TextStyle(color: Colors.grey[600]),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                 ),
             ],
           ),
@@ -555,7 +568,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           'Laporan Keterlambatan',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
-            color: Colors.grey[800],
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 16),
@@ -583,9 +596,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.red[50],
+                      color: Theme.of(context).colorScheme.errorContainer,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.withOpacity(0.2)),
+                      border: Border.all(color: Theme.of(context).colorScheme.error.withOpacity(0.2)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -594,15 +607,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           children: [
                             Icon(
                               Icons.warning,
-                              color: Colors.red[600],
+                              color: Theme.of(context).colorScheme.error,
                               size: 20,
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 loan['full_name'] ?? 'Unknown Member',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.onErrorContainer,
                                 ),
                               ),
                             ),
@@ -612,13 +626,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.red,
+                                color: Theme.of(context).colorScheme.error,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 '$daysOverdue hari',
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onError,
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -629,7 +643,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         const SizedBox(height: 8),
                         Text(
                           loan['title'] ?? 'Unknown Book',
-                          style: const TextStyle(fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            color: Theme.of(context).colorScheme.onErrorContainer,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Row(
@@ -637,7 +654,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             Text(
                               'Jatuh tempo: ${_formatDate(loan['due_date'])}',
                               style: TextStyle(
-                                color: Colors.grey[600],
+                                color: Theme.of(context).colorScheme.onErrorContainer.withOpacity(0.7),
                                 fontSize: 12,
                               ),
                             ),
@@ -651,16 +668,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.green[50],
+                    color: Theme.of(context).colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.check_circle, color: Colors.green[600]),
+                      Icon(
+                        Icons.check_circle, 
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                       const SizedBox(width: 12),
                       Text(
                         'Tidak ada keterlambatan saat ini',
-                        style: TextStyle(color: Colors.green[700]),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onPrimaryContainer),
                       ),
                     ],
                   ),

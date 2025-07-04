@@ -44,12 +44,28 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Keluar'),
-          content: Text('Apakah Anda yakin ingin keluar?'),
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          title: Text(
+            'Keluar',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          content: Text(
+            'Apakah Anda yakin ingin keluar?',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Batal'),
+              child: Text(
+                'Batal',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -86,21 +102,21 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: Text(
           'Perpustakaan Digital',
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onPrimary,
           ),
         ),
-        backgroundColor: Colors.blue[600],
-        elevation: 0,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        elevation: 2,
         actions: [
           const NotificationBadge(),
           IconButton(
-            icon: const Icon(Icons.settings, color: Colors.white),
+            icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.onPrimary),
             onPressed: () async {
               await Navigator.push(
                 context,
@@ -111,7 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: 'Pengaturan',
           ),
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
+            icon: Icon(Icons.logout, color: Theme.of(context).colorScheme.onPrimary),
             onPressed: _logout,
             tooltip: 'Keluar',
           ),
@@ -128,14 +144,17 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.blue[600]!, Colors.blue[400]!],
+                  colors: [
+                    Theme.of(context).colorScheme.primary,
+                    Theme.of(context).colorScheme.primary.withOpacity(0.8)
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.blue.withOpacity(0.3),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                     spreadRadius: 1,
                     blurRadius: 10,
                     offset: const Offset(0, 3),
@@ -149,13 +168,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       CircleAvatar(
                         radius: 30,
-                        backgroundColor: Colors.white,
+                        backgroundColor: Theme.of(context).colorScheme.onPrimary,
                         child: Icon(
                           _currentUser!['role'] == 'admin'
                               ? Icons.admin_panel_settings
                               : Icons.person,
                           size: 30,
-                          color: Colors.blue[600],
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -166,14 +185,14 @@ class _HomeScreenState extends State<HomeScreen> {
                             Text(
                               'Selamat Datang',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.9),
+                                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.9),
                                 fontSize: 14,
                               ),
                             ),
                             Text(
                               _currentUser!['full_name'] ?? 'User',
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onPrimary,
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -184,13 +203,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
+                                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
                                 (_currentUser!['role'] ?? 'user').toString().toUpperCase(),
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onPrimary,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -215,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
               'Informasi Pengguna',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 16),
@@ -259,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
               'Aksi Cepat',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 16),
@@ -359,11 +378,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 2),
@@ -388,16 +407,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   title,
                   style: TextStyle(
-                    color: Colors.grey[600],
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -420,11 +440,11 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
               spreadRadius: 1,
               blurRadius: 5,
               offset: const Offset(0, 2),
@@ -445,13 +465,20 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 12),
             Text(
               title,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 14, 
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: 12, 
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              ),
               textAlign: TextAlign.center,
             ),
           ],

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'services/session_manager.dart';
 import 'services/notification_service.dart';
+import 'services/theme_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/core/main_navigation_screen.dart';
 
@@ -8,7 +10,12 @@ import 'screens/core/main_navigation_screen.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => ThemeProvider(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -16,16 +23,18 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: navigatorKey,
-      title: 'Sistem Perpustakaan',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-        fontFamily: 'Roboto',
-      ),
-      home: const SplashScreen(),
-      debugShowCheckedModeBanner: false,
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return MaterialApp(
+          navigatorKey: navigatorKey,
+          title: 'Sistem Perpustakaan',
+          theme: AppThemes.lightTheme,
+          darkTheme: AppThemes.darkTheme,
+          themeMode: themeProvider.themeMode,
+          home: const SplashScreen(),
+          debugShowCheckedModeBanner: false,
+        );
+      },
     );
   }
 }
@@ -79,8 +88,12 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final backgroundColor = isDarkMode ? Colors.grey[900]! : primaryColor;
+    
     return Scaffold(
-      backgroundColor: Colors.blue[600],
+      backgroundColor: backgroundColor,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -90,11 +103,11 @@ class _SplashScreenState extends State<SplashScreen> {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(30),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withOpacity(isDarkMode ? 0.4 : 0.2),
                     spreadRadius: 2,
                     blurRadius: 10,
                     offset: const Offset(0, 4),
@@ -104,18 +117,18 @@ class _SplashScreenState extends State<SplashScreen> {
               child: Icon(
                 Icons.library_books,
                 size: 60,
-                color: Colors.blue[600],
+                color: primaryColor,
               ),
             ),
             const SizedBox(height: 32),
             
             // App Title
-            const Text(
+            Text(
               'Sistem Perpustakaan',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -124,14 +137,16 @@ class _SplashScreenState extends State<SplashScreen> {
               'Kelola perpustakaan dengan mudah',
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.white.withOpacity(0.8),
+                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.8),
               ),
             ),
             const SizedBox(height: 48),
             
             // Loading Indicator
-            const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Theme.of(context).colorScheme.onPrimary,
+              ),
               strokeWidth: 3,
             ),
             const SizedBox(height: 16),
@@ -140,7 +155,7 @@ class _SplashScreenState extends State<SplashScreen> {
               'Memuat...',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.white.withOpacity(0.8),
+                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.8),
               ),
             ),
           ],

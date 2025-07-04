@@ -158,13 +158,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Dashboard',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onPrimary,
+          ),
         ),
-        backgroundColor: Colors.blue[600],
+        backgroundColor: Theme.of(context).colorScheme.primary,
         elevation: 0,
         automaticallyImplyLeading: false,
       ),
@@ -179,14 +182,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.blue[600]!, Colors.blue[400]!],
+                  colors: [
+                    Theme.of(context).colorScheme.primary,
+                    Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.blue.withOpacity(0.3),
+                    color: Theme.of(context).colorScheme.shadow.withOpacity(0.3),
                     spreadRadius: 1,
                     blurRadius: 10,
                     offset: const Offset(0, 3),
@@ -200,13 +206,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       CircleAvatar(
                         radius: 30,
-                        backgroundColor: Colors.white,
+                        backgroundColor: Theme.of(context).colorScheme.surface,
                         child: Icon(
                           _currentUser!['role'] == 'admin'
                               ? Icons.admin_panel_settings
                               : Icons.person,
                           size: 30,
-                          color: Colors.blue[600],
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -217,14 +223,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             Text(
                               'Selamat Datang',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.9),
+                                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.9),
                                 fontSize: 14,
                               ),
                             ),
                             Text(
                               _currentUser!['full_name'] ?? 'User',
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onPrimary,
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -235,15 +241,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
+                                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
                                 (_currentUser!['role'] ?? 'user')
                                     .toString()
                                     .toUpperCase(),
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onPrimary,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -264,7 +270,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               'Aksi Cepat',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 16),
@@ -367,11 +373,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
               spreadRadius: 1,
               blurRadius: 5,
               offset: const Offset(0, 2),
@@ -392,13 +398,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 12),
             Text(
               title,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -417,18 +430,24 @@ class SettingsScreenWithLogout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Pengaturan',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onPrimary,
+          ),
         ),
-        backgroundColor: Colors.blue[600],
+        backgroundColor: Theme.of(context).colorScheme.primary,
         elevation: 0,
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
+            icon: Icon(
+              Icons.logout,
+              color: Theme.of(context).colorScheme.onPrimary,
+            ),
             onPressed: onLogout,
             tooltip: 'Keluar',
           ),

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "982415778411",
+    "project_id": "septinna-perpustakaan",
+    "storage_bucket": "septinna-perpustakaan.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:982415778411:android:5f00b9c555d688bfb7c72e",
+        "android_client_info": {
+          "package_name": "com.example.perpustakaan"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDanVhX1njqRcdsSP-jv4LiO2wPdUyhaJY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

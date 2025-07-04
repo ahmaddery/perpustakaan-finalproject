@@ -138,30 +138,31 @@ class _BooksScreenState extends State<BooksScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Koleksi Buku Online',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 20,
+            color: Theme.of(context).colorScheme.onPrimary,
           ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF667eea),
-                Color(0xFF764ba2),
+                Theme.of(context).colorScheme.primary,
+                Theme.of(context).colorScheme.primary.withOpacity(0.8),
               ],
             ),
           ),
         ),
-        foregroundColor: Colors.white,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.sort),
@@ -181,12 +182,12 @@ class _BooksScreenState extends State<BooksScreen> {
           Container(
             padding: const EdgeInsets.all(20.0),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFF667eea),
-                  Color(0xFF764ba2),
+                  Theme.of(context).colorScheme.primary,
+                  Theme.of(context).colorScheme.primary.withOpacity(0.8),
                 ],
               ),
               borderRadius: const BorderRadius.only(
@@ -199,11 +200,11 @@ class _BooksScreenState extends State<BooksScreen> {
                 const SizedBox(height: 10),
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(15),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 5),
                       ),
@@ -214,11 +215,11 @@ class _BooksScreenState extends State<BooksScreen> {
                     onChanged: _searchBooks,
                     decoration: InputDecoration(
                       labelText: 'Cari buku atau penerbit...',
-                      labelStyle: TextStyle(color: Colors.grey[600]),
-                      prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+                      labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
+                      prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: Icon(Icons.clear, color: Colors.grey[600]),
+                              icon: Icon(Icons.clear, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
                               onPressed: () {
                                 _searchController.clear();
                                 _searchBooks('');
@@ -230,7 +231,7 @@ class _BooksScreenState extends State<BooksScreen> {
                         borderSide: BorderSide.none,
                       ),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: Theme.of(context).colorScheme.surface,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 16,
@@ -244,8 +245,8 @@ class _BooksScreenState extends State<BooksScreen> {
                   children: [
                     Text(
                       'Total Buku: ${filteredBooks.length}',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
@@ -256,7 +257,7 @@ class _BooksScreenState extends State<BooksScreen> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -264,14 +265,14 @@ class _BooksScreenState extends State<BooksScreen> {
                         children: [
                           Icon(
                             Icons.library_books,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onPrimary,
                             size: 16,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             'Koleksi',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.onPrimary,
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
@@ -294,14 +295,14 @@ class _BooksScreenState extends State<BooksScreen> {
                       children: [
                         CircularProgressIndicator(
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            Color(0xFF667eea),
+                            Theme.of(context).colorScheme.primary,
                           ),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           'Memuat data buku...',
                           style: TextStyle(
-                            color: Colors.grey[600],
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                             fontSize: 16,
                           ),
                         ),
@@ -324,7 +325,7 @@ class _BooksScreenState extends State<BooksScreen> {
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.grey[800],
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -333,7 +334,7 @@ class _BooksScreenState extends State<BooksScreen> {
                               child: Text(
                                 errorMessage,
                                 textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.grey[600]),
+                                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -352,7 +353,7 @@ class _BooksScreenState extends State<BooksScreen> {
                                 Icon(
                                   Icons.library_books_outlined,
                                   size: 80,
-                                  color: Colors.grey[400],
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
@@ -360,7 +361,7 @@ class _BooksScreenState extends State<BooksScreen> {
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w500,
-                                    color: Colors.grey[600],
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                   ),
                                 ),
                                 const SizedBox(height: 8),
@@ -368,7 +369,7 @@ class _BooksScreenState extends State<BooksScreen> {
                                   'Coba sesuaikan pencarian Anda',
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: Colors.grey[500],
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                                   ),
                                 ),
                               ],
@@ -386,23 +387,16 @@ class _BooksScreenState extends State<BooksScreen> {
                                   curve: Curves.easeOutBack,
                                   margin: const EdgeInsets.only(bottom: 16),
                                   child: Card(
-                                    elevation: 8,
-                                    shadowColor: Colors.black.withOpacity(0.1),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Container(
-                                      decoration: BoxDecoration(
+                                      elevation: 8,
+                                      shadowColor: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+                                      shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(20),
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          colors: [
-                                            Colors.white,
-                                            Colors.grey[50]!,
-                                          ],
-                                        ),
                                       ),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(20),
+                                          color: Theme.of(context).colorScheme.surface,
+                                        ),
                                       child: InkWell(
                                         borderRadius: BorderRadius.circular(20),
                                         onTap: () {
@@ -422,18 +416,18 @@ class _BooksScreenState extends State<BooksScreen> {
                                                 width: 60,
                                                 height: 80,
                                                 decoration: BoxDecoration(
-                                                  gradient: const LinearGradient(
+                                                  gradient: LinearGradient(
                                                     begin: Alignment.topLeft,
                                                     end: Alignment.bottomRight,
                                                     colors: [
-                                                      Color(0xFF667eea),
-                                                      Color(0xFF764ba2),
+                                                      Theme.of(context).colorScheme.primary,
+                                                      Theme.of(context).colorScheme.primary.withOpacity(0.8),
                                                     ],
                                                   ),
                                                   borderRadius: BorderRadius.circular(12),
                                                   boxShadow: [
                                                     BoxShadow(
-                                                      color: Color(0xFF667eea).withOpacity(0.3),
+                                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                                                       blurRadius: 8,
                                                       offset: const Offset(0, 4),
                                                     ),
@@ -442,8 +436,8 @@ class _BooksScreenState extends State<BooksScreen> {
                                                 child: Center(
                                                   child: Text(
                                                     book.title[0].toUpperCase(),
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
+                                                    style: TextStyle(
+                                                      color: Theme.of(context).colorScheme.onPrimary,
                                                       fontSize: 24,
                                                       fontWeight: FontWeight.bold,
                                                     ),
@@ -459,10 +453,10 @@ class _BooksScreenState extends State<BooksScreen> {
                                                   children: [
                                                     Text(
                                                       book.title,
-                                                      style: const TextStyle(
+                                                      style: TextStyle(
                                                         fontSize: 18,
                                                         fontWeight: FontWeight.bold,
-                                                        color: Color(0xFF2D3748),
+                                                        color: Theme.of(context).colorScheme.onSurface,
                                                       ),
                                                       maxLines: 2,
                                                       overflow: TextOverflow.ellipsis,
@@ -473,14 +467,14 @@ class _BooksScreenState extends State<BooksScreen> {
                                                         Icon(
                                                           Icons.calendar_today,
                                                           size: 16,
-                                                          color: Colors.grey[600],
+                                                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                                         ),
                                                         const SizedBox(width: 4),
                                                         Text(
                                                           'Tahun: ${book.year}',
                                                           style: TextStyle(
                                                             fontSize: 14,
-                                                            color: Colors.grey[600],
+                                                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                                           ),
                                                         ),
                                                       ],
@@ -490,7 +484,7 @@ class _BooksScreenState extends State<BooksScreen> {
                                                         Icon(
                                                           Icons.business,
                                                           size: 16,
-                                                          color: Colors.grey[600],
+                                                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                                         ),
                                                         const SizedBox(width: 4),
                                                         Expanded(
@@ -498,7 +492,7 @@ class _BooksScreenState extends State<BooksScreen> {
                                                             'Penerbit: ${book.publisher}',
                                                             style: TextStyle(
                                                               fontSize: 14,
-                                                              color: Colors.grey[600],
+                                                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                                             ),
                                                             maxLines: 1,
                                                             overflow: TextOverflow.ellipsis,
@@ -511,14 +505,14 @@ class _BooksScreenState extends State<BooksScreen> {
                                                         Icon(
                                                           Icons.description,
                                                           size: 16,
-                                                          color: Colors.grey[600],
+                                                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                                         ),
                                                         const SizedBox(width: 4),
                                                         Text(
                                                           'Halaman: ${book.pages}',
                                                           style: TextStyle(
                                                             fontSize: 14,
-                                                            color: Colors.grey[600],
+                                                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                                           ),
                                                         ),
                                                       ],
@@ -567,7 +561,7 @@ class _BooksScreenState extends State<BooksScreen> {
                                               Icon(
                                                 Icons.arrow_forward_ios,
                                                 size: 16,
-                                                color: Colors.grey[400],
+                                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                                               ),
                                             ],
                                           ),

@@ -156,14 +156,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           _filteredNotifications.isEmpty
               ? 'Notifikasi'
               : 'Notifikasi (${_filteredNotifications.length})',
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onPrimary,
           ),
         ),
-        backgroundColor: Colors.blue[600],
+        backgroundColor: Theme.of(context).colorScheme.primary,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -198,7 +198,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         children: [
           // Filter Buttons
           Container(
-            color: Colors.blue[600],
+            color: Theme.of(context).colorScheme.primary,
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
@@ -218,11 +218,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
-              color: Colors.grey[100],
+              color: Theme.of(context).colorScheme.surface,
               child: Text(
                 '${_filteredNotifications.length} notifikasi',
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -280,20 +280,27 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 64, color: Colors.grey[400]),
+          Icon(
+            icon,
+            size: 64,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+          ),
           const SizedBox(height: 16),
           Text(
             message,
             style: TextStyle(
               fontSize: 18,
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
               fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'Tarik ke bawah untuk memperbarui',
-            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+            style: TextStyle(
+              fontSize: 14,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+            ),
           ),
         ],
       ),
@@ -309,8 +316,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         });
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor: isSelected ? Colors.white : Colors.blue[700],
-        foregroundColor: isSelected ? Colors.blue[600] : Colors.white,
+        backgroundColor: isSelected 
+            ? Theme.of(context).colorScheme.surface 
+            : Theme.of(context).colorScheme.primary.withOpacity(0.8),
+        foregroundColor: isSelected 
+            ? Theme.of(context).colorScheme.primary 
+            : Theme.of(context).colorScheme.onPrimary,
         elevation: isSelected ? 2 : 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -417,16 +428,17 @@ class NotificationCard extends StatelessWidget {
                         children: [
                           Text(
                             notification.title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                           Text(
                             _getTimeText(),
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey[600],
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                             ),
                           ),
                         ],
@@ -456,7 +468,11 @@ class NotificationCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   notification.message,
-                  style: const TextStyle(fontSize: 14, height: 1.4),
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.4,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -464,14 +480,14 @@ class NotificationCard extends StatelessWidget {
                     Icon(
                       Icons.calendar_today,
                       size: 14,
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                     ),
                     const SizedBox(width: 4),
                     Text(
                       'Jatuh tempo: ${_formatDate(notification.dueDate)}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -556,7 +572,7 @@ class NotificationCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
@@ -570,19 +586,20 @@ class NotificationCard extends StatelessWidget {
                             'Tanggal Jatuh Tempo',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Colors.grey[700],
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _formatDate(notification.dueDate),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                          _formatDate(notification.dueDate),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
                         ),
-                      ),
                       if (notification.overdueDays != null) ...[
                         const SizedBox(height: 12),
                         Row(
@@ -597,7 +614,7 @@ class NotificationCard extends StatelessWidget {
                               'Hari Keterlambatan',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: Colors.grey[700],
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
                               ),
                             ),
                           ],

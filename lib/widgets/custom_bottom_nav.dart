@@ -16,10 +16,10 @@ class CustomBottomNavigation extends StatelessWidget {
     return Container(
       height: 80,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -29,31 +29,37 @@ class CustomBottomNavigation extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildNavItem(
+            context: context,
             index: 0,
             icon: Icons.dashboard_rounded,
             label: 'Dashboard',
           ),
           _buildNavItem(
+            context: context,
             index: 1,
             icon: Icons.library_books_rounded,
             label: 'Koleksi Buku',
           ),
           _buildNavItem(
+            context: context,
             index: 2,
             icon: Icons.people_rounded,
             label: 'Anggota',
           ),
           _buildNavItem(
+            context: context,
             index: 3,
             icon: Icons.assignment_rounded,
             label: 'Peminjaman',
           ),
           _buildNavItemWithBadge(
+            context: context,
             index: 4,
             icon: Icons.notifications_rounded,
             label: 'Notifikasi',
           ),
           _buildNavItem(
+            context: context,
             index: 5,
             icon: Icons.settings_rounded,
             label: 'Pengaturan',
@@ -64,6 +70,7 @@ class CustomBottomNavigation extends StatelessWidget {
   }
 
   Widget _buildNavItem({
+    required BuildContext context,
     required int index,
     required IconData icon,
     required String label,
@@ -80,13 +87,17 @@ class CustomBottomNavigation extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.blue[50] : Colors.transparent,
+                color: isSelected 
+                    ? Theme.of(context).colorScheme.primary.withOpacity(0.1) 
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 icon,
                 size: 22,
-                color: isSelected ? Colors.blue[600] : Colors.grey[500],
+                color: isSelected 
+                    ? Theme.of(context).colorScheme.primary 
+                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
               ),
             ),
             const SizedBox(height: 4),
@@ -95,7 +106,9 @@ class CustomBottomNavigation extends StatelessWidget {
               style: TextStyle(
                 fontSize: 9,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected ? Colors.blue[600] : Colors.grey[500],
+                color: isSelected 
+                    ? Theme.of(context).colorScheme.primary 
+                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
               ),
               textAlign: TextAlign.center,
               maxLines: 1,
@@ -108,6 +121,7 @@ class CustomBottomNavigation extends StatelessWidget {
   }
 
   Widget _buildNavItemWithBadge({
+    required BuildContext context,
     required int index,
     required IconData icon,
     required String label,
@@ -124,7 +138,9 @@ class CustomBottomNavigation extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.blue[50] : Colors.transparent,
+                color: isSelected 
+                    ? Theme.of(context).colorScheme.primary.withOpacity(0.1) 
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Stack(
@@ -132,7 +148,9 @@ class CustomBottomNavigation extends StatelessWidget {
                   Icon(
                     icon,
                     size: 22,
-                    color: isSelected ? Colors.blue[600] : Colors.grey[500],
+                    color: isSelected 
+                        ? Theme.of(context).colorScheme.primary 
+                        : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                   ),
                   Positioned(
                     right: 0,
@@ -148,7 +166,9 @@ class CustomBottomNavigation extends StatelessWidget {
               style: TextStyle(
                 fontSize: 9,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected ? Colors.blue[600] : Colors.grey[500],
+                color: isSelected 
+                    ? Theme.of(context).colorScheme.primary 
+                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
               ),
               textAlign: TextAlign.center,
               maxLines: 1,
