@@ -59,13 +59,13 @@ class Payment {
 
   factory Payment.fromJson(Map<String, dynamic> json) {
     return Payment(
-      id: json['id'],
-      userId: json['user_id'],
+      id: int.parse(json['id'].toString()),
+      userId: int.parse(json['user_id'].toString()),
       paymentCategory: json['payment_category'],
       referenceId: json['reference_id'],
-      loanId: json['loan_id'],
-      bookId: json['book_id'],
-      daysLate: json['days_late'] ?? 0,
+      loanId: json['loan_id'] != null ? int.parse(json['loan_id'].toString()) : null,
+      bookId: json['book_id'] != null ? int.parse(json['book_id'].toString()) : null,
+      daysLate: int.parse((json['days_late'] ?? 0).toString()),
       externalId: json['external_id'],
       merchantName: json['merchant_name'],
       merchantProfilePictureUrl: json['merchant_profile_picture_url'],
@@ -78,7 +78,7 @@ class Payment {
       invoiceUrl: json['invoice_url'],
       status: json['status'],
       currency: json['currency'],
-      quantity: json['quantity'] ?? 1,
+      quantity: int.parse((json['quantity'] ?? 1).toString()),
       paidAmount: double.parse(json['paid_amount'].toString()),
       bankCode: json['bank_code'],
       paidAt: json['paid_at'] != null 
@@ -87,7 +87,7 @@ class Payment {
       paymentChannel: json['payment_channel'],
       paymentDestination: json['payment_destination'],
       paymentId: json['payment_id'],
-      isHigh: json['is_high'] ?? false,
+      isHigh: json['is_high'] == true || json['is_high'] == 'true',
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
     );

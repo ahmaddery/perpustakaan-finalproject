@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../database/database_helper.dart';
+import '../../services/book_firestore_service.dart';
 
 class BooksManagementScreen extends StatefulWidget {
   const BooksManagementScreen({Key? key}) : super(key: key);
@@ -14,11 +15,14 @@ class _BooksManagementScreenState extends State<BooksManagementScreen> {
   List<Map<String, dynamic>> _filteredBooks = [];
   final TextEditingController _searchController = TextEditingController();
   bool _isLoading = true;
+  bool _isSyncing = false;
+  DateTime? _lastSyncTime;
 
   @override
   void initState() {
     super.initState();
     _loadBooks();
+    _loadLastSyncTime();
   }
 
   Future<void> _loadBooks() async {
@@ -112,6 +116,135 @@ class _BooksManagementScreenState extends State<BooksManagementScreen> {
     );
   }
 
+  Future<void> _loadLastSyncTime() async {
+    try {
+      final syncTime = await BookFirestoreService.getLastSyncTime();
+      setState(() {
+        _lastSyncTime = syncTime;
+      });
+    } catch (e) {
+      print('Error loading last sync time: $e');
+    }
+  }
+
+  Future<void> _syncData() async {
+    setState(() {
+      _isSyncing = true;
+    });
+
+    try {
+      await BookFirestoreService.smartSync();
+      await _loadBooks();
+      await _loadLastSyncTime();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Data berhasil disinkronkan'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal sinkronisasi: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isSyncing = false;
+      });
+    }
+  }
+
+  Future<void> _syncToFirestore() async {
+    setState(() {
+      _isSyncing = true;
+    });
+
+    try {
+      await BookFirestoreService.syncToFirestore();
+      await _loadLastSyncTime();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Data berhasil diunggah ke Firestore'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mengunggah: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isSyncing = false;
+      });
+    }
+  }
+
+  Future<void> _syncFromFirestore() async {
+    setState(() {
+      _isSyncing = true;
+    });
+
+    try {
+      await BookFirestoreService.syncFromFirestore();
+      await _loadBooks();
+      await _loadLastSyncTime();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Data berhasil diunduh dari Firestore'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mengunduh: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isSyncing = false;
+      });
+    }
+  }
+
+  String _formatSyncTime(DateTime? syncTime) {
+    if (syncTime == null) return 'Belum pernah';
+    
+    final now = DateTime.now();
+    final difference = now.difference(syncTime);
+    
+    if (difference.inMinutes < 1) {
+      return 'Baru saja';
+    } else if (difference.inHours < 1) {
+      return '${difference.inMinutes} menit yang lalu';
+    } else if (difference.inDays < 1) {
+      return '${difference.inHours} jam yang lalu';
+    } else {
+      return '${difference.inDays} hari yang lalu';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -133,6 +266,56 @@ class _BooksManagementScreenState extends State<BooksManagementScreen> {
           ),
         ),
         foregroundColor: Colors.white,
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.sync, color: Colors.white),
+            onSelected: (value) {
+              switch (value) {
+                case 'smart_sync':
+                  _syncData();
+                  break;
+                case 'upload':
+                  _syncToFirestore();
+                  break;
+                case 'download':
+                  _syncFromFirestore();
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'smart_sync',
+                child: Row(
+                  children: [
+                    Icon(Icons.sync, color: Color(0xFF667eea)),
+                    SizedBox(width: 8),
+                    Text('Smart Sync'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'upload',
+                child: Row(
+                  children: [
+                    Icon(Icons.cloud_upload, color: Color(0xFF667eea)),
+                    SizedBox(width: 8),
+                    Text('Upload ke Firestore'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'download',
+                child: Row(
+                  children: [
+                    Icon(Icons.cloud_download, color: Color(0xFF667eea)),
+                    SizedBox(width: 8),
+                    Text('Download dari Firestore'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -188,13 +371,26 @@ class _BooksManagementScreenState extends State<BooksManagementScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Total Books: ${_filteredBooks.length}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Total Books: ${_filteredBooks.length}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Sinkronisasi: ${_formatSyncTime(_lastSyncTime)}',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -231,59 +427,63 @@ class _BooksManagementScreenState extends State<BooksManagementScreen> {
             ),
           ),
           Expanded(
-            child:
-                _isLoading
-                    ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Color(0xFF667eea),
+            child: Stack(
+              children: [
+                RefreshIndicator(
+                  onRefresh: _syncData,
+                  color: const Color(0xFF667eea),
+                  child: _isLoading
+                      ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xFF667eea),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Loading books...',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 16,
+                            const SizedBox(height: 16),
+                            Text(
+                              'Loading books...',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 16,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    )
-                    : _filteredBooks.isEmpty
-                    ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.library_books_outlined,
-                            size: 80,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No books found',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey[600],
+                          ],
+                        ),
+                      )
+                      : _filteredBooks.isEmpty
+                      ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.library_books_outlined,
+                              size: 80,
+                              color: Colors.grey[400],
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Try adjusting your search or add new books',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[500],
+                            const SizedBox(height: 16),
+                            Text(
+                              'No books found',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey[600],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    )
-                    : ListView.builder(
+                            const SizedBox(height: 8),
+                            Text(
+                              'Try adjusting your search or add new books',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                      : ListView.builder(
                       padding: const EdgeInsets.all(16),
                       itemCount: _filteredBooks.length,
                       itemBuilder: (context, index) {
@@ -516,6 +716,34 @@ class _BooksManagementScreenState extends State<BooksManagementScreen> {
                         );
                       },
                     ),
+                ),
+                if (_isSyncing)
+                  Container(
+                    color: Colors.black.withOpacity(0.3),
+                    child: const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Color(0xFF667eea),
+                            ),
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Sinkronisasi data...',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ],
       ),

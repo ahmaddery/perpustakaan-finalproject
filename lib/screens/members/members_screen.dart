@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../database/database_helper.dart';
 import '../../models/member_model.dart';
+import '../../services/member_firestore_service.dart';
 
 class MembersScreen extends StatefulWidget {
   const MembersScreen({Key? key}) : super(key: key);
@@ -15,11 +16,14 @@ class _MembersScreenState extends State<MembersScreen> {
   List<Member> _filteredMembers = [];
   final TextEditingController _searchController = TextEditingController();
   bool _isLoading = true;
+  bool _isSyncing = false;
+  DateTime? _lastSyncTime;
 
   @override
   void initState() {
     super.initState();
     _loadMembers();
+    _loadLastSyncTime();
   }
 
   Future<void> _loadMembers() async {
@@ -41,6 +45,124 @@ class _MembersScreenState extends State<MembersScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error loading members: $e')));
+    }
+  }
+
+  Future<void> _loadLastSyncTime() async {
+    try {
+      final syncTime = await MemberFirestoreService.getLastSyncTime();
+      setState(() {
+        _lastSyncTime = syncTime;
+      });
+    } catch (e) {
+      print('Error loading last sync time: $e');
+    }
+  }
+
+  Future<void> _syncData() async {
+    setState(() {
+      _isSyncing = true;
+    });
+
+    try {
+      // Perform smart sync
+      await MemberFirestoreService.smartSync();
+      
+      // Reload local data
+      await _loadMembers();
+      await _loadLastSyncTime();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Data berhasil disinkronisasi'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error sinkronisasi: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isSyncing = false;
+      });
+    }
+  }
+
+  Future<void> _syncToFirestore() async {
+    setState(() {
+      _isSyncing = true;
+    });
+
+    try {
+      await MemberFirestoreService.syncMembersToFirestore();
+      await _loadLastSyncTime();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Data berhasil diupload ke Firestore'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error upload: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isSyncing = false;
+      });
+    }
+  }
+
+  Future<void> _syncFromFirestore() async {
+    setState(() {
+      _isSyncing = true;
+    });
+
+    try {
+      await MemberFirestoreService.syncMembersFromFirestore();
+      await _loadMembers();
+      await _loadLastSyncTime();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Data berhasil didownload dari Firestore'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error download: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isSyncing = false;
+      });
+    }
+  }
+
+  String _formatSyncTime(DateTime syncTime) {
+    final now = DateTime.now();
+    final difference = now.difference(syncTime);
+    
+    if (difference.inMinutes < 1) {
+      return 'Baru saja';
+    } else if (difference.inHours < 1) {
+      return '${difference.inMinutes} menit yang lalu';
+    } else if (difference.inDays < 1) {
+      return '${difference.inHours} jam yang lalu';
+    } else {
+      return '${difference.inDays} hari yang lalu';
     }
   }
 
@@ -176,6 +298,56 @@ class _MembersScreenState extends State<MembersScreen> {
             ),
           ),
         ),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.sync, color: Colors.white),
+            onSelected: (value) {
+              switch (value) {
+                case 'smart_sync':
+                  _syncData();
+                  break;
+                case 'upload':
+                  _syncToFirestore();
+                  break;
+                case 'download':
+                  _syncFromFirestore();
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'smart_sync',
+                child: Row(
+                  children: [
+                    Icon(Icons.sync_alt, color: Colors.blue[700]),
+                    const SizedBox(width: 8),
+                    const Text('Smart Sync'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'upload',
+                child: Row(
+                  children: [
+                    Icon(Icons.cloud_upload, color: Colors.green[700]),
+                    const SizedBox(width: 8),
+                    const Text('Upload ke Firestore'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'download',
+                child: Row(
+                  children: [
+                    Icon(Icons.cloud_download, color: Colors.orange[700]),
+                    const SizedBox(width: 8),
+                    const Text('Download dari Firestore'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -194,13 +366,26 @@ class _MembersScreenState extends State<MembersScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Total Anggota: ${_filteredMembers.length}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Total Anggota: ${_filteredMembers.length}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          if (_lastSyncTime != null)
+                            Text(
+                              'Terakhir sync: ${_formatSyncTime(_lastSyncTime!)}',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
+                            ),
+                        ],
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -265,56 +450,65 @@ class _MembersScreenState extends State<MembersScreen> {
             ),
           ),
           Expanded(
-            child:
-                _isLoading
-                    ? const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Color(0xFF667eea),
+            child: RefreshIndicator(
+              onRefresh: _syncData,
+              color: const Color(0xFF667eea),
+              child: Stack(
+                children: [
+                  _isLoading
+                      ? const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xFF667eea),
+                              ),
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'Memuat data anggota...',
+                              style: TextStyle(color: Colors.grey, fontSize: 16),
+                            ),
+                          ],
+                        ),
+                      )
+                      : _filteredMembers.isEmpty
+                      ? ListView(
+                        children: const [
+                          SizedBox(height: 200),
+                          Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.people_outline,
+                                  size: 80,
+                                  color: Colors.grey,
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  'Tidak ada anggota ditemukan',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Tarik ke bawah untuk menyinkronkan data',
+                                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                                ),
+                              ],
                             ),
                           ),
-                          SizedBox(height: 16),
-                          Text(
-                            'Memuat data anggota...',
-                            style: TextStyle(color: Colors.grey, fontSize: 16),
-                          ),
                         ],
-                      ),
-                    )
-                    : _filteredMembers.isEmpty
-                    ? const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.people_outline,
-                            size: 80,
-                            color: Colors.grey,
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            'Tidak ada anggota ditemukan',
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Coba sesuaikan pencarian Anda',
-                            style: TextStyle(fontSize: 14, color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    )
-                    : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _filteredMembers.length,
-                      itemBuilder: (context, index) {
+                      )
+                      : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _filteredMembers.length,
+                        itemBuilder: (context, index) {
                         final member = _filteredMembers[index];
                         return AnimatedContainer(
                           duration: Duration(milliseconds: 300 + (index * 50)),
@@ -540,6 +734,34 @@ class _MembersScreenState extends State<MembersScreen> {
                         );
                       },
                     ),
+                  if (_isSyncing)
+                    Container(
+                      color: Colors.black.withOpacity(0.3),
+                      child: const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xFF667eea),
+                              ),
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'Menyinkronkan data...',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

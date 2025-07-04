@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'auth_controller.dart';
 import '../core/main_navigation_screen.dart';
+import 'login_screen.dart';
+import '../../services/registration_service.dart';
 
 class RegisterWidget extends StatefulWidget {
   const RegisterWidget({super.key});
@@ -19,6 +21,14 @@ class _RegisterWidgetState extends State<RegisterWidget> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String _selectedRole = 'staff';
+  bool _registrationEnabled = true;
+  bool _isCheckingRegistration = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkRegistrationStatus();
+  }
 
   @override
   void dispose() {
@@ -27,6 +37,16 @@ class _RegisterWidgetState extends State<RegisterWidget> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkRegistrationStatus() async {
+    final isEnabled = await RegistrationService.isRegistrationEnabled();
+    if (mounted) {
+      setState(() {
+        _registrationEnabled = isEnabled;
+        _isCheckingRegistration = false;
+      });
+    }
   }
 
   Future<void> _handleRegister() async {
@@ -63,8 +83,90 @@ class _RegisterWidgetState extends State<RegisterWidget> {
     }
   }
 
+  Widget _buildRegistrationDisabledView() {
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.grey[800]),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.block,
+                  size: 80,
+                  color: Colors.red[400],
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Registrasi Dinonaktifkan',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Pendaftaran akun baru saat ini tidak tersedia. Silakan hubungi administrator.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green[600],
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Kembali ke Login',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isCheckingRegistration) {
+      return Scaffold(
+        backgroundColor: Colors.grey[50],
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (!_registrationEnabled) {
+      return _buildRegistrationDisabledView();
+    }
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(

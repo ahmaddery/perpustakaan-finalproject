@@ -189,24 +189,32 @@ class PaymentService {
   /// Get all payment history
   static Future<List<Payment>> getAllPaymentHistory({String? token}) async {
     try {
+      print('Making API request to: $baseUrl/payments/read/all');
       final response = await http.get(
         Uri.parse('$baseUrl/payments/read/all'),
         headers: token != null ? authHeaders(token) : headers,
       );
 
+      print('API response status: ${response.statusCode}');
+      print('API response body: ${response.body}');
+
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         if (jsonData['success'] == true && jsonData['data'] != null) {
           final payments = jsonData['data']['payments'] as List;
+          print('Successfully parsed ${payments.length} payments from API');
           return payments.map((payment) => Payment.fromJson(payment)).toList();
         } else {
+          print('API returned success=false or no data');
           throw Exception(jsonData['message'] ?? 'Failed to get payment history');
         }
       } else {
+        print('API returned error status: ${response.statusCode}');
         final errorData = json.decode(response.body);
         throw Exception(errorData['message'] ?? 'Failed to get payment history');
       }
     } catch (e) {
+      print('Exception in getAllPaymentHistory: $e');
       throw Exception('Error getting payment history: $e');
     }
   }

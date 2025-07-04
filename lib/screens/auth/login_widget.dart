@@ -3,6 +3,7 @@ import 'auth_controller.dart';
 import '../core/main_navigation_screen.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
+import '../../services/registration_service.dart';
 
 class LoginWidget extends StatefulWidget {
   const LoginWidget({super.key});
@@ -17,12 +18,30 @@ class _LoginWidgetState extends State<LoginWidget> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _registrationEnabled = true;
+  bool _isCheckingRegistration = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkRegistrationStatus();
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkRegistrationStatus() async {
+    final isEnabled = await RegistrationService.isRegistrationEnabled();
+    if (mounted) {
+      setState(() {
+        _registrationEnabled = isEnabled;
+        _isCheckingRegistration = false;
+      });
+    }
   }
 
   Future<void> _handleLogin() async {
@@ -229,32 +248,70 @@ class _LoginWidgetState extends State<LoginWidget> {
                 ),
                 const SizedBox(height: 24),
                 
-                // Register Link
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Belum punya akun? ',
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const RegisterScreen(),
-                          ),
-                        );
-                      },
-                      child: Text(
-                        'Daftar di sini',
+                // Register link or disabled message
+                if (_isCheckingRegistration)
+                  const CircularProgressIndicator()
+                else if (_registrationEnabled)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Belum punya akun? ',
                         style: TextStyle(
-                          color: Colors.blue[600],
-                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                          fontSize: 14,
                         ),
                       ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const RegisterScreen(),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          'Daftar di sini',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.error.withOpacity(0.5),
+                      ),
                     ),
-                  ],
-                ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: Theme.of(context).colorScheme.error,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Pendaftaran pengguna baru saat ini dinonaktifkan. Silakan hubungi administrator untuk membuat akun.',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),

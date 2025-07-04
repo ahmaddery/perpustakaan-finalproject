@@ -3,6 +3,7 @@ import '../../database/database_helper.dart';
 import '../../models/loan_model.dart';
 import '../../services/payment_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/loan_firestore_service.dart';
 import 'return_book_dialog.dart';
 import 'create_loan_screen.dart';
 import 'payment_webview_screen.dart';
@@ -23,6 +24,8 @@ class _LoansScreenState extends State<LoansScreen>
   List<Loan> _activeLoans = [];
   List<Loan> _overdueLoans = [];
   bool _isLoading = true;
+  bool _isSyncing = false;
+  DateTime? _lastSyncTime;
 
   // Add flags to prevent multiple payment status checks and track current payment
   bool _isCheckingPaymentStatus = false;
@@ -32,6 +35,7 @@ class _LoansScreenState extends State<LoansScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _loadLastSyncTime();
     _loadLoans();
   }
 
@@ -66,6 +70,145 @@ class _LoansScreenState extends State<LoansScreen>
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error loading loans: $e')));
+    }
+  }
+
+  Future<void> _loadLastSyncTime() async {
+    try {
+      final lastSync = await LoanFirestoreService.getLastSyncTime();
+      setState(() {
+        _lastSyncTime = lastSync;
+      });
+    } catch (e) {
+      print('Error loading last sync time: $e');
+    }
+  }
+
+  Future<void> _syncData() async {
+    if (_isSyncing) return;
+    
+    setState(() {
+      _isSyncing = true;
+    });
+    
+    try {
+      await LoanFirestoreService.smartSync();
+      await _loadLastSyncTime();
+      await _loadLoans();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Data berhasil disinkronkan'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sinkronisasi: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSyncing = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _syncToFirestore() async {
+    if (_isSyncing) return;
+    
+    setState(() {
+      _isSyncing = true;
+    });
+    
+    try {
+      await LoanFirestoreService.syncToFirestore();
+      await _loadLastSyncTime();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Data berhasil diupload ke Firestore'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error upload: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSyncing = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _syncFromFirestore() async {
+    if (_isSyncing) return;
+    
+    setState(() {
+      _isSyncing = true;
+    });
+    
+    try {
+      await LoanFirestoreService.syncFromFirestore();
+      await _loadLastSyncTime();
+      await _loadLoans();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Data berhasil didownload dari Firestore'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error download: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSyncing = false;
+        });
+      }
+    }
+  }
+
+  String _formatSyncTime(DateTime syncTime) {
+    final now = DateTime.now();
+    final difference = now.difference(syncTime);
+
+    if (difference.inMinutes < 1) {
+      return 'Baru saja';
+    } else if (difference.inHours < 1) {
+      return '${difference.inMinutes} menit yang lalu';
+    } else if (difference.inDays < 1) {
+      return '${difference.inHours} jam yang lalu';
+    } else {
+      return '${difference.inDays} hari yang lalu';
     }
   }
 
@@ -869,141 +1012,231 @@ class _LoansScreenState extends State<LoansScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
+      body: Stack(
         children: [
-          // Header with gradient background
-          Container(
-            padding: const EdgeInsets.only(
-              top: 48,
-              left: 16,
-              right: 16,
-              bottom: 16,
-            ),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Colors.blue.shade700, Colors.blue.shade500],
-              ),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(24),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.blue.shade200.withOpacity(0.5),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
+          // Main content
+          Column(
+            children: [
+              // Header with gradient background
+              Container(
+                padding: const EdgeInsets.only(
+                  top: 48,
+                  left: 16,
+                  right: 16,
+                  bottom: 16,
                 ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                    const Text(
-                      'Peminjaman',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.refresh, color: Colors.white),
-                      onPressed: _loadLoans,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Colors.blue.shade700, Colors.blue.shade500],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(24),
+                    bottomRight: Radius.circular(24),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.shade200.withOpacity(0.5),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                // Statistics cards
-                Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        'Semua',
-                        _allLoans.length.toString(),
-                        Icons.book,
-                        Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildStatCard(
-                        'Aktif',
-                        _activeLoans.length.toString(),
-                        Icons.book_online,
-                        Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildStatCard(
-                        'Terlambat',
-                        _overdueLoans.length.toString(),
-                        Icons.warning_amber_rounded,
-                        Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // Tab bar
-          Container(
-            margin: const EdgeInsets.only(top: 16, left: 16, right: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.2),
-                  blurRadius: 5,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: TabBar(
-              controller: _tabController,
-              tabs: [
-                Tab(text: 'Semua (${_allLoans.length})'),
-                Tab(text: 'Aktif (${_activeLoans.length})'),
-                Tab(text: 'Terlambat (${_overdueLoans.length})'),
-              ],
-              labelColor: Colors.blue.shade700,
-              unselectedLabelColor: Colors.grey,
-              indicatorSize: TabBarIndicatorSize.label,
-              indicator: UnderlineTabIndicator(
-                borderSide: BorderSide(width: 3, color: Colors.blue.shade700),
-                insets: const EdgeInsets.symmetric(horizontal: 16),
-              ),
-            ),
-          ),
-
-          // Tab content
-          Expanded(
-            child:
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : TabBarView(
-                      controller: _tabController,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildLoansList(_allLoans),
-                        _buildLoansList(_activeLoans),
-                        _buildLoansList(_overdueLoans),
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                        const Text(
+                          'Peminjaman',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.sync, color: Colors.white),
+                          onSelected: (value) {
+                            switch (value) {
+                              case 'smart_sync':
+                                _syncData();
+                                break;
+                              case 'upload':
+                                _syncToFirestore();
+                                break;
+                              case 'download':
+                                _syncFromFirestore();
+                                break;
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'smart_sync',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.sync_alt, color: Colors.blue),
+                                  SizedBox(width: 8),
+                                  Text('Smart Sync'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'upload',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.cloud_upload, color: Colors.green),
+                                  SizedBox(width: 8),
+                                  Text('Upload ke Firestore'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'download',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.cloud_download, color: Colors.orange),
+                                  SizedBox(width: 8),
+                                  Text('Download dari Firestore'),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
+                    const SizedBox(height: 8),
+                    // Sync status
+                    if (_lastSyncTime != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          'Terakhir disinkronkan: ${_formatSyncTime(_lastSyncTime!)}',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                    // Statistics cards
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatCard(
+                            'Semua',
+                            _allLoans.length.toString(),
+                            Icons.book,
+                            Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatCard(
+                            'Aktif',
+                            _activeLoans.length.toString(),
+                            Icons.book_online,
+                            Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatCard(
+                            'Terlambat',
+                            _overdueLoans.length.toString(),
+                            Icons.warning_amber_rounded,
+                            Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Tab bar
+              Container(
+                margin: const EdgeInsets.only(top: 16, left: 16, right: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.2),
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: TabBar(
+                  controller: _tabController,
+                  tabs: [
+                    Tab(text: 'Semua (${_allLoans.length})'),
+                    Tab(text: 'Aktif (${_activeLoans.length})'),
+                    Tab(text: 'Terlambat (${_overdueLoans.length})'),
+                  ],
+                  labelColor: Colors.blue.shade700,
+                  unselectedLabelColor: Colors.grey,
+                  indicatorSize: TabBarIndicatorSize.label,
+                  indicator: UnderlineTabIndicator(
+                    borderSide: BorderSide(width: 3, color: Colors.blue.shade700),
+                    insets: const EdgeInsets.symmetric(horizontal: 16),
+                  ),
+                ),
+              ),
+
+              // Tab content
+              Expanded(
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : RefreshIndicator(
+                        onRefresh: _syncData,
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _buildLoansList(_allLoans),
+                            _buildLoansList(_activeLoans),
+                            _buildLoansList(_overdueLoans),
+                          ],
+                        ),
+                      ),
+              ),
+            ],
           ),
+          // Syncing overlay
+          if (_isSyncing)
+            Container(
+              color: Colors.black.withOpacity(0.5),
+              child: const Center(
+                child: Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text(
+                          'Menyinkronkan data...',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/theme_provider.dart';
 import '../../services/profile_service.dart';
 import '../../services/session_manager.dart';
@@ -20,12 +21,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Map<String, dynamic>? _userProfile;
   bool _isLoadingProfile = true;
   final ProfileService _profileService = ProfileService();
+  bool _registrationEnabled = true;
+  bool _isLoadingRegistration = true;
 
   @override
   void initState() {
     super.initState();
     _loadNotificationSettings();
     _loadUserProfile();
+    _loadRegistrationSettings();
   }
 
   Future<void> _loadUserProfile() async {
@@ -73,6 +77,71 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _loadRegistrationSettings() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('app_settings')
+          .doc('registration')
+          .get();
+      
+      if (mounted) {
+        setState(() {
+          _registrationEnabled = doc.exists ? (doc.data()?['enabled'] ?? true) : true;
+          _isLoadingRegistration = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _registrationEnabled = true;
+          _isLoadingRegistration = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleRegistration(bool value) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('app_settings')
+          .doc('registration')
+          .set({
+        'enabled': value,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      
+      setState(() {
+        _registrationEnabled = value;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              value ? 'Pendaftaran pengguna baru diaktifkan' : 'Pendaftaran pengguna baru dinonaktifkan',
+            ),
+            backgroundColor: value 
+                ? Theme.of(context).colorScheme.primary 
+                : Theme.of(context).colorScheme.secondary,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mengubah pengaturan: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -107,6 +176,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildNotificationCard(),
             
             const SizedBox(height: 24),
+            
+            // System Settings Section (only for admin)
+            if (_userProfile?['role'] == 'admin') ...[
+              _buildSectionTitle('Pengaturan Sistem'),
+              const SizedBox(height: 12),
+              _buildSystemSettingsCard(),
+              const SizedBox(height: 24),
+            ],
             
             // Reports Section
             _buildSectionTitle('Laporan'),
@@ -383,6 +460,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 activeColor: Theme.of(context).colorScheme.secondary,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSystemSettingsCard() {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            if (_isLoadingRegistration)
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: CircularProgressIndicator(),
+              )
+            else
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: _registrationEnabled 
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : Theme.of(context).colorScheme.errorContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    _registrationEnabled ? Icons.person_add : Icons.person_add_disabled,
+                    color: _registrationEnabled 
+                      ? Theme.of(context).colorScheme.onPrimaryContainer
+                      : Theme.of(context).colorScheme.onErrorContainer,
+                    size: 24,
+                  ),
+                ),
+                title: Text(
+                  'Pendaftaran Pengguna Baru',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                subtitle: Text(
+                  _registrationEnabled 
+                      ? 'Pengguna baru dapat mendaftar akun'
+                      : 'Pendaftaran akun baru dinonaktifkan',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                    fontSize: 14,
+                  ),
+                ),
+                trailing: Switch(
+                  value: _registrationEnabled,
+                  onChanged: _toggleRegistration,
+                  activeColor: Theme.of(context).colorScheme.primary,
+                ),
+              ),
           ],
         ),
       ),
