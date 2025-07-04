@@ -3,10 +3,10 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 import 'database_schema.dart';
-import 'queries/user_queries.dart';
 import 'queries/member_queries.dart';
 import 'queries/book_queries.dart';
 import 'queries/loan_queries.dart';
+import '../services/firebase_auth_service.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -33,46 +33,27 @@ class DatabaseHelper {
 
   Future<void> _onCreate(Database db, int version) async {
     await DatabaseSchema.onCreate(db, version);
-    // Insert default admin user
-    await UserQueries.insertDefaultAdmin(db);
+    // Note: User authentication is now handled by Firebase Auth
+    // No need to insert default admin user in SQLite
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     await DatabaseSchema.onUpgrade(db, oldVersion, newVersion);
   }
 
-  // ==================== USER METHODS ====================
+  // ==================== USER METHODS (Firebase Auth) ====================
   
-  Future<Map<String, dynamic>?> authenticateUser(String email, String password) async {
-    final db = await database;
-    return await UserQueries.authenticateUser(db, email, password);
-  }
-
-  Future<bool> registerUser({
-    required String fullName,
-    required String email,
-    required String password,
-    required String role,
-  }) async {
-    final db = await database;
-    return await UserQueries.registerUser(
-      db,
-      fullName: fullName,
-      email: email,
-      password: password,
-      role: role,
-    );
-  }
-
-  Future<Map<String, dynamic>?> getUserById(int userId) async {
-    final db = await database;
-    return await UserQueries.getUserById(db, userId);
-  }
-
-  Future<List<Map<String, dynamic>>> getAllUsers() async {
-    final db = await database;
-    return await UserQueries.getAllUsers(db);
-  }
+  // User authentication is now handled by Firebase Auth Service
+  // Use FirebaseAuthService() for all user authentication operations:
+  // - registerUser()
+  // - signInUser()
+  // - signOut()
+  // - getCurrentUserData()
+  // - updateUserProfile()
+  // - resetPassword()
+  // - getAllUsers()
+  
+  FirebaseAuthService get authService => FirebaseAuthService();
 
   // ==================== MEMBER METHODS ====================
   

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/session_manager.dart';
+import '../../services/firebase_auth_service.dart';
 import '../../services/notification_service.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../books/books_screen.dart';
@@ -38,11 +39,21 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   Future<void> _loadUserData() async {
     try {
-      final userData = await SessionManager.getCurrentUser();
-      setState(() {
-        _currentUser = userData;
-        _isLoading = false;
-      });
+      // Get fresh data from Firebase
+      final userData = await FirebaseAuthService().getCurrentUserData();
+      if (userData != null) {
+        setState(() {
+          _currentUser = userData;
+          _isLoading = false;
+        });
+      } else {
+        // Fallback to session data if Firebase data is not available
+        final sessionData = await SessionManager.getCurrentUser();
+        setState(() {
+          _currentUser = sessionData;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -139,11 +150,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _loadUserData() async {
     try {
-      final userData = await SessionManager.getCurrentUser();
-      setState(() {
-        _currentUser = userData;
-        _isLoading = false;
-      });
+      // Get fresh data from Firebase
+      final userData = await FirebaseAuthService().getCurrentUserData();
+      if (userData != null) {
+        setState(() {
+          _currentUser = userData;
+          _isLoading = false;
+        });
+      } else {
+        // Fallback to session data if Firebase data is not available
+        final sessionData = await SessionManager.getCurrentUser();
+        setState(() {
+          _currentUser = sessionData;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -228,7 +249,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                             ),
                             Text(
-                              _currentUser!['full_name'] ?? 'User',
+                              _currentUser!['fullName'] ?? _currentUser!['full_name'] ?? 'User',
                               style: TextStyle(
                                 color: Theme.of(context).colorScheme.onPrimary,
                                 fontSize: 20,

@@ -1,15 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'services/session_manager.dart';
 import 'services/notification_service.dart';
 import 'services/theme_provider.dart';
+import 'services/firebase_auth_service.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/core/main_navigation_screen.dart';
 
 // Global navigator key for accessing context from anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
   runApp(
     ChangeNotifierProvider(
       create: (context) => ThemeProvider(),
@@ -58,27 +68,43 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future.delayed(const Duration(seconds: 2));
     
     try {
-      bool isLoggedIn = await SessionManager.isLoggedIn();
+      // Check Firebase Auth state
+      final authService = FirebaseAuthService();
+      final currentUser = authService.currentUser;
       
       if (mounted) {
-        if (isLoggedIn) {
+        if (currentUser != null) {
+          // User sudah login dengan Firebase Auth
+          // Update session manager dengan data Firebase
+          final userData = await authService.getCurrentUserData();
+          if (userData != null) {
+            await SessionManager.saveSession(
+              userId: userData['uid'] ?? '',
+              fullName: userData['fullName'] ?? '',
+              email: userData['email'] ?? '',
+              role: userData['role'] ?? 'user',
+            );
+          }
+          
           // Initialize notification service when user is logged in
           await NotificationService().startNotificationService();
           
-          // User sudah login, arahkan ke main navigation dengan bottom navbar
+          // Arahkan ke main navigation dengan bottom navbar
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
           );
         } else {
-          // User belum login, arahkan ke login
+          // User belum login, clear session dan arahkan ke login
+          await SessionManager.clearSession();
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const LoginScreen()),
           );
         }
       }
     } catch (e) {
-      // Jika terjadi error, arahkan ke login
+      // Jika terjadi error, clear session dan arahkan ke login
       if (mounted) {
+        await SessionManager.clearSession();
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const LoginScreen()),
         );

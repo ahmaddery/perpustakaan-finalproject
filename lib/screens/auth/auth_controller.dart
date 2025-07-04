@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../database/database_helper.dart';
+import '../../services/firebase_auth_service.dart';
 import '../../services/session_manager.dart';
 import '../../services/notification_service.dart';
 
 class AuthController {
-  static final DatabaseHelper _dbHelper = DatabaseHelper();
+  static final FirebaseAuthService _authService = FirebaseAuthService();
 
   /// Login user with email and password
   static Future<AuthResult> login({
@@ -12,13 +12,19 @@ class AuthController {
     required String password,
   }) async {
     try {
-      final user = await _dbHelper.authenticateUser(
-        email.trim(),
-        password,
+      final result = await _authService.signInUser(
+        email: email.trim(),
+        password: password,
       );
 
-      if (user != null) {
-        await SessionManager.saveUserSession(user);
+      if (result['success'] == true) {
+        final user = result['user'];
+        await SessionManager.saveSession(
+          userId: user['uid'],
+          fullName: user['fullName'],
+          email: user['email'],
+          role: user['role'],
+        );
         
         // Initialize notification service after successful login
         await NotificationService().startNotificationService();
@@ -29,7 +35,7 @@ class AuthController {
         );
       } else {
         return AuthResult.failure(
-          message: 'Email atau kata sandi salah',
+          message: result['message'] ?? 'Email atau kata sandi salah',
         );
       }
     } catch (e) {
@@ -47,35 +53,50 @@ class AuthController {
     required String role,
   }) async {
     try {
-      bool success = await _dbHelper.registerUser(
+      final result = await _authService.registerUser(
         fullName: fullName.trim(),
         email: email.trim(),
         password: password,
         role: role,
       );
 
-      if (success) {
-        // Auto login after successful registration
-        final user = await _dbHelper.authenticateUser(
-          email.trim(),
-          password,
+      if (result['success'] == true) {
+        final user = result['user'];
+        await SessionManager.saveSession(
+          userId: user['uid'],
+          fullName: user['fullName'],
+          email: user['email'],
+          role: user['role'],
         );
-
-        if (user != null) {
-          await SessionManager.saveUserSession(user);
-          
-          return AuthResult.success(
-            message: 'Registrasi berhasil',
-            user: user,
-          );
-        } else {
-          return AuthResult.failure(
-            message: 'Registrasi berhasil tetapi gagal login otomatis',
-          );
-        }
+        
+        return AuthResult.success(
+          message: 'Registrasi berhasil',
+          user: user,
+        );
       } else {
         return AuthResult.failure(
-          message: 'Email sudah terdaftar atau terjadi kesalahan',
+          message: result['message'] ?? 'Registrasi gagal, silakan coba lagi',
+        );
+      }
+    } catch (e) {
+      return AuthResult.failure(
+        message: 'Terjadi kesalahan: $e',
+      );
+    }
+  }
+
+  /// Reset password using email
+  static Future<AuthResult> resetPassword(String email) async {
+    try {
+      final result = await _authService.resetPassword(email.trim());
+
+      if (result['success'] == true) {
+        return AuthResult.success(
+          message: result['message'] ?? 'Email reset password telah dikirim',
+        );
+      } else {
+        return AuthResult.failure(
+          message: result['message'] ?? 'Gagal mengirim email reset password',
         );
       }
     } catch (e) {
